@@ -1,0 +1,146 @@
+/* CSS 변수 시스템 - 스타일 가이드 기반 */
+
+:root {
+  /* Primary Colors */
+  --color-primary-main: #1976D2;
+  --color-primary-light: #42A5F5;
+  --color-primary-dark: #1565C0;
+  --color-primary-contrast: #FFFFFF;
+
+  /* Secondary Colors */
+  --color-secondary-main: #FF6F00;
+  --color-secondary-light: #FF9800;
+  --color-secondary-dark: #E65100;
+  --color-secondary-contrast: #FFFFFF;
+
+  /* Semantic Colors */
+  --color-success-main: #2E7D32;
+  --color-success-light: #4CAF50;
+  --color-success-dark: #1B5E20;
+
+  --color-warning-main: #ED6C02;
+  --color-warning-light: #FF9800;
+  --color-warning-dark: #E65100;
+
+  --color-error-main: #D32F2F;
+  --color-error-light: #EF5350;
+  --color-error-dark: #C62828;
+
+  --color-info-main: #0288D1;
+  --color-info-light: #03A9F4;
+  --color-info-dark: #01579B;
+
+  /* Background Colors */
+  --color-background-default: #FFFFFF;
+  --color-background-paper: #F5F5F5;
+  --color-background-dark: #121212;
+
+  /* Text Colors */
+  --color-text-primary: rgba(0, 0, 0, 0.87);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-text-disabled: rgba(0, 0, 0, 0.38);
+
+  /* Divider */
+  --color-divider: rgba(0, 0, 0, 0.12);
+
+  /* Financial Data Colors */
+  --color-total-assets: #1976D2;
+  --color-net-assets: #2E7D32;
+  --color-total-loans: #D32F2F;
+  --color-available-funds: #FF6F00;
+
+  /* Status Colors */
+  --color-eligible: #2E7D32;
+  --color-ineligible: #D32F2F;
+  --color-processing: #0288D1;
+  --color-pending: #ED6C02;
+
+  /* Typography - Font Sizes */
+  --font-size-h1: 2rem;          /* 32px */
+  --font-size-h2: 1.5rem;        /* 24px */
+  --font-size-h3: 1.25rem;       /* 20px */
+  --font-size-h4: 1.125rem;      /* 18px */
+  --font-size-body1: 1rem;       /* 16px */
+  --font-size-body2: 0.875rem;   /* 14px */
+  --font-size-caption: 0.75rem;  /* 12px */
+  --font-size-button: 0.875rem;  /* 14px */
+
+  /* Typography - Font Weights */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing Scale (8px 기준) */
+  --spacing-xs: 4px;    /* 0.5 unit */
+  --spacing-sm: 8px;    /* 1 unit */
+  --spacing-md: 16px;   /* 2 units */
+  --spacing-lg: 24px;   /* 3 units */
+  --spacing-xl: 32px;   /* 4 units */
+  --spacing-xxl: 48px;  /* 6 units */
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 16px;
+  --border-radius-round: 50%;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 11px 15px rgba(0, 0, 0, 0.2);
+  --shadow-button: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-button-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-appbar: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-bottom-nav: 0 -2px 4px rgba(0, 0, 0, 0.05);
+
+  /* Transitions */
+  --transition-duration-shortest: 150ms;
+  --transition-duration-shorter: 200ms;
+  --transition-duration-short: 250ms;
+  --transition-duration-standard: 300ms;
+  --transition-duration-complex: 375ms;
+
+  --transition-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-easing-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+
+  /* Component Specific */
+  --appbar-height: 56px;
+  --bottom-nav-height: 56px;
+  --fab-size: 56px;
+  --fab-bottom: 80px;
+  --fab-right: 16px;
+
+  /* Page Layout */
+  --page-padding-mobile: 16px;
+  --page-padding-tablet: 24px;
+  --page-padding-desktop: 32px;
+  --section-margin: 32px;
+  --card-margin: 16px;
+
+  /* Z-Index */
+  --z-index-appbar: 1100;
+  --z-index-drawer: 1200;
+  --z-index-modal: 1300;
+  --z-index-snackbar: 1400;
+  --z-index-tooltip: 1500;
+}
+
+/* 반응형 타이포그래피 */
+@media (max-width: 599px) {
+  :root {
+    --font-size-h1: 1.75rem;  /* 28px */
+    --font-size-h2: 1.375rem; /* 22px */
+    --font-size-h3: 1.125rem; /* 18px */
+  }
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  :root {
+    --font-size-h1: 1.875rem; /* 30px */
+    --font-size-h2: 1.4375rem; /* 23px */
+  }
+}
