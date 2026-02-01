@@ -13,6 +13,10 @@ import {
   CircularProgress,
   Fab,
   Drawer,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -36,6 +40,20 @@ const TAB_CONFIG: { key: TabType; label: string; addLabel: string }[] = [
 
 // 바텀시트 모드
 type SheetMode = 'add' | 'edit';
+
+// 상환 유형 옵션
+const REPAYMENT_TYPE_OPTIONS = [
+  { value: 'EP', label: '원금균등 (EP)' },
+  { value: 'EPI', label: '원리금균등 (EPI)' },
+  { value: 'MDT', label: '만기일시 (MDT)' },
+  { value: 'GG', label: '체증식 (GG)' },
+];
+
+// 상환 유형 라벨 변환
+const getRepaymentTypeLabel = (type: string): string => {
+  const option = REPAYMENT_TYPE_OPTIONS.find((opt) => opt.value === type);
+  return option ? option.label : type;
+};
 
 // 금액 포맷 함수
 const formatAmount = (amount: number): string => {
@@ -71,6 +89,9 @@ const SelfAssetInput = () => {
   const [editingItem, setEditingItem] = useState<AssetItem | null>(null);
   const [inputName, setInputName] = useState('');
   const [inputAmount, setInputAmount] = useState('');
+  const [inputInterestRate, setInputInterestRate] = useState('');
+  const [inputRepaymentType, setInputRepaymentType] = useState('');
+  const [inputExpirationDate, setInputExpirationDate] = useState('');
 
   // 기존 자산정보 로드 (GET /api/v1/assets)
   useEffect(() => {
@@ -154,6 +175,9 @@ const SelfAssetInput = () => {
     setEditingItem(null);
     setInputName('');
     setInputAmount('');
+    setInputInterestRate('');
+    setInputRepaymentType('');
+    setInputExpirationDate('');
     setSheetOpen(true);
   };
 
@@ -163,6 +187,9 @@ const SelfAssetInput = () => {
     setEditingItem(item);
     setInputName(item.name);
     setInputAmount(formatAmount(item.amount));
+    setInputInterestRate(item.interestRate != null ? String(item.interestRate) : '');
+    setInputRepaymentType(item.repaymentType || '');
+    setInputExpirationDate(item.expirationDate || '');
     setSheetOpen(true);
   };
 
@@ -172,6 +199,9 @@ const SelfAssetInput = () => {
     setEditingItem(null);
     setInputName('');
     setInputAmount('');
+    setInputInterestRate('');
+    setInputRepaymentType('');
+    setInputExpirationDate('');
   };
 
   // 항목 저장 (추가/수정)
@@ -189,19 +219,35 @@ const SelfAssetInput = () => {
     const amount = parseAmount(inputAmount);
     const currentData = getCurrentData();
 
+    const isLoanTab = TAB_CONFIG[activeTab].key === 'loans';
+
     if (sheetMode === 'add') {
       // 새 항목 추가
       const newItem: AssetItem = {
         id: `temp_${Date.now()}`,
         name: inputName.trim(),
         amount,
+        ...(isLoanTab && {
+          interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
+          repaymentType: inputRepaymentType || undefined,
+          expirationDate: inputExpirationDate || undefined,
+        }),
       };
       setCurrentData([...currentData, newItem]);
     } else if (sheetMode === 'edit' && editingItem) {
       // 기존 항목 수정
       const updatedData = currentData.map((item) =>
         item.id === editingItem.id
-          ? { ...item, name: inputName.trim(), amount }
+          ? {
+              ...item,
+              name: inputName.trim(),
+              amount,
+              ...(isLoanTab && {
+                interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
+                repaymentType: inputRepaymentType || undefined,
+                expirationDate: inputExpirationDate || undefined,
+              }),
+            }
           : item
       );
       setCurrentData(updatedData);
@@ -378,14 +424,33 @@ const SelfAssetInput = () => {
             {currentData.map((item) => (
               <Card key={item.id} sx={{ mb: 1.5 }}>
                 <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <Box sx={{ flex: 1 }}>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
                         {item.name}
                       </Typography>
                       <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
                         {formatAmount(item.amount)}원
                       </Typography>
+                      {TAB_CONFIG[activeTab].key === 'loans' && (
+                        <Box sx={{ mt: 0.5 }}>
+                          {item.interestRate != null && (
+                            <Typography variant="caption" color="text.secondary">
+                              금리: {item.interestRate}%
+                            </Typography>
+                          )}
+                          {item.repaymentType && (
+                            <Typography variant="caption" color="text.secondary" sx={{ ml: item.interestRate != null ? 1.5 : 0 }}>
+                              상환: {getRepaymentTypeLabel(item.repaymentType)}
+                            </Typography>
+                          )}
+                          {item.expirationDate && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              만기일: {item.expirationDate}
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
                     </Box>
                     <Box>
                       <IconButton
@@ -481,7 +546,7 @@ const SelfAssetInput = () => {
           sx: {
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
-            maxHeight: '50vh',
+            maxHeight: '80vh',
           },
         }}
       >
@@ -517,7 +582,61 @@ const SelfAssetInput = () => {
               value={inputAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               inputProps={{ inputMode: 'numeric' }}
+              sx={{ mb: currentConfig.key === 'loans' ? 2 : 0 }}
             />
+
+            {/* 대출 탭 전용 필드 */}
+            {currentConfig.key === 'loans' && (
+              <>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  금리 (%)
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="예: 3.5"
+                  value={inputInterestRate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*\.?\d*$/.test(val)) {
+                      setInputInterestRate(val);
+                    }
+                  }}
+                  inputProps={{ inputMode: 'decimal' }}
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  상환 유형
+                </Typography>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <Select
+                    value={inputRepaymentType}
+                    onChange={(e) => setInputRepaymentType(e.target.value)}
+                    displayEmpty
+                  >
+                    <MenuItem value="" disabled>
+                      상환 유형 선택
+                    </MenuItem>
+                    {REPAYMENT_TYPE_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  만기일
+                </Typography>
+                <TextField
+                  fullWidth
+                  type="date"
+                  value={inputExpirationDate}
+                  onChange={(e) => setInputExpirationDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </>
+            )}
           </Box>
 
           {/* 저장 버튼 */}
