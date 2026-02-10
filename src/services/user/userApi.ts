@@ -33,6 +33,7 @@ export interface UserProfile {
   currentAddress?: Address;
   userWorkplaceAddress?: Address;
   spouseWorkplaceAddress?: Address;
+  withholdingTaxSalary?: number;
   investmentPropensity?: 'HIGH' | 'MEDIUM' | 'LOW';
   createdAt: string;
   updatedAt: string;
@@ -45,6 +46,7 @@ export interface UserProfileUpdateRequest {
   currentAddress?: string;
   userWorkplaceAddress?: string;
   spouseWorkplaceAddress?: string;
+  withholdingTaxSalary?: number;
   investmentPropensity?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 

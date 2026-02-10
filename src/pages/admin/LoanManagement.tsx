@@ -49,9 +49,10 @@ import {
 const initialFormData: CreateLoanProductRequest = {
   name: '',
   loanLimit: 0,
-  ltvLimit: 70,
-  dtiLimit: 60,
   dsrLimit: 40,
+  isApplyLtv: true,
+  isApplyDti: true,
+  isApplyDsr: true,
   interestRate: 3.5,
   targetHousing: '',
   incomeRequirement: '',
@@ -121,9 +122,10 @@ const LoanManagement = () => {
     setFormData({
       name: product.name,
       loanLimit: product.loanLimit,
-      ltvLimit: product.ltvLimit,
-      dtiLimit: product.dtiLimit,
       dsrLimit: product.dsrLimit,
+      isApplyLtv: product.isApplyLtv ?? true,
+      isApplyDti: product.isApplyDti ?? true,
+      isApplyDsr: product.isApplyDsr ?? true,
       interestRate: product.interestRate,
       targetHousing: product.targetHousing,
       incomeRequirement: product.incomeRequirement || '',
@@ -225,9 +227,10 @@ const LoanManagement = () => {
       const updateData: UpdateLoanProductRequest = {
         name: product.name,
         loanLimit: product.loanLimit,
-        ltvLimit: product.ltvLimit,
-        dtiLimit: product.dtiLimit,
         dsrLimit: product.dsrLimit,
+        isApplyLtv: product.isApplyLtv ?? true,
+        isApplyDti: product.isApplyDti ?? true,
+        isApplyDsr: product.isApplyDsr ?? true,
         interestRate: product.interestRate,
         targetHousing: product.targetHousing,
         incomeRequirement: product.incomeRequirement,
@@ -363,8 +366,12 @@ const LoanManagement = () => {
                     <Typography variant="body2" fontWeight={600}>연 {product.interestRate}%</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">LTV / DTI</Typography>
-                    <Typography variant="body2" fontWeight={600}>최대 {product.ltvLimit}% / 최대 {product.dtiLimit}%</Typography>
+                    <Typography variant="body2" color="text.secondary">기준 적용</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {product.isApplyLtv && <Chip label="LTV" size="small" color="primary" variant="outlined" />}
+                      {product.isApplyDti && <Chip label="DTI" size="small" color="primary" variant="outlined" />}
+                      {product.isApplyDsr && <Chip label="DSR" size="small" color="primary" variant="outlined" />}
+                    </Box>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="text.secondary">대상주택</Typography>
@@ -412,8 +419,7 @@ const LoanManagement = () => {
                 <TableCell>대출이름</TableCell>
                 <TableCell>대출한도</TableCell>
                 <TableCell>금리</TableCell>
-                <TableCell>LTV</TableCell>
-                <TableCell>DTI</TableCell>
+                <TableCell>기준 적용</TableCell>
                 <TableCell>대상주택</TableCell>
                 <TableCell>작업</TableCell>
               </TableRow>
@@ -431,8 +437,13 @@ const LoanManagement = () => {
                   <TableCell>{product.name}</TableCell>
                   <TableCell>{formatCurrency(product.loanLimit)}</TableCell>
                   <TableCell>연 {product.interestRate}%</TableCell>
-                  <TableCell>최대 {product.ltvLimit}%</TableCell>
-                  <TableCell>최대 {product.dtiLimit}%</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {product.isApplyLtv && <Chip label="LTV" size="small" color="primary" variant="outlined" />}
+                      {product.isApplyDti && <Chip label="DTI" size="small" color="primary" variant="outlined" />}
+                      {product.isApplyDsr && <Chip label="DSR" size="small" color="primary" variant="outlined" />}
+                    </Box>
+                  </TableCell>
                   <TableCell>{product.targetHousing}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -488,25 +499,39 @@ const LoanManagement = () => {
               fullWidth
               inputProps={{ min: 0, step: 1000 }}
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="LTV 한도 (%)"
-                type="number"
-                value={formData.ltvLimit}
-                onChange={(e) => handleFormChange('ltvLimit', Number(e.target.value))}
-                required
-                fullWidth
-                inputProps={{ min: 0, max: 100, step: 5 }}
-              />
-              <TextField
-                label="DTI 한도 (%)"
-                type="number"
-                value={formData.dtiLimit}
-                onChange={(e) => handleFormChange('dtiLimit', Number(e.target.value))}
-                required
-                fullWidth
-                inputProps={{ min: 0, max: 100, step: 5 }}
-              />
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                LTV/DTI/DSR 기준 적용 여부
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isApplyLtv ?? true}
+                      onChange={(e) => handleFormChange('isApplyLtv', e.target.checked)}
+                    />
+                  }
+                  label="LTV 적용"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isApplyDti ?? true}
+                      onChange={(e) => handleFormChange('isApplyDti', e.target.checked)}
+                    />
+                  }
+                  label="DTI 적용"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isApplyDsr ?? true}
+                      onChange={(e) => handleFormChange('isApplyDsr', e.target.checked)}
+                    />
+                  }
+                  label="DSR 적용"
+                />
+              </Box>
             </Box>
             <TextField
               label="DSR 한도 (%)"

@@ -30,7 +30,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { openSnackbar } from '../../store/slices/uiSlice';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
-import { housingApi } from '../../services/housing/housingApi';
+import { housingApi, REGION_CODE_LABELS } from '../../services/housing/housingApi';
 import type { HousingListItem, HousingType } from '../../services/housing/housingApi';
 
 type FilterType = 'all' | HousingType;
@@ -347,6 +347,19 @@ const HousingList = () => {
                     {housing.fullAddress}
                   </Typography>
                 </Box>
+
+                {/* 지역 구분 */}
+                {housing.regionCode && (
+                  <Box sx={{ mb: 1 }}>
+                    <Chip
+                      label={REGION_CODE_LABELS[housing.regionCode] || housing.regionCode}
+                      size="small"
+                      variant="outlined"
+                      color="info"
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                  </Box>
+                )}
 
                 {/* 가격 */}
                 <Typography variant="h6" color="primary" sx={{ fontWeight: 700, mb: 1 }}>

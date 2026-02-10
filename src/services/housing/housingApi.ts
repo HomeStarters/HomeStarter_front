@@ -86,6 +86,25 @@ export interface LivingEnvironment {
 // 주택 유형
 export type HousingType = 'APARTMENT' | 'OFFICETEL' | 'VILLA' | 'HOUSE';
 
+// 지역 코드 타입 (토지거래허가구역 등)
+export type RegionCode = 'OHA' | 'LTPZ' | 'AA' | 'G' | '';
+
+// 지역 코드 라벨
+export const REGION_CODE_LABELS: Record<string, string> = {
+  OHA: '투기과열지구',
+  LTPZ: '토지거래허가구역',
+  AA: '조정대상지역',
+  G: '비규제지역',
+};
+
+// 지역 특성 정보 타입
+export interface RegionalCharacteristic {
+  regionCode?: RegionCode;
+  regionDescription?: string;
+  ltv?: number;
+  dti?: number;
+}
+
 // 주택 생성 요청 타입
 export interface HousingCreateRequest {
   housingName: string;
@@ -94,6 +113,7 @@ export interface HousingCreateRequest {
   moveInDate?: string; // YYYY-MM 형식
   completionDate?: string; // YYYY-MM-DD 형식
   address: string;
+  regionCode?: RegionCode;
   // address: AddressRequest;
   complexInfo?: ComplexInfo;
   livingEnvironment?: LivingEnvironment;
@@ -108,6 +128,7 @@ export interface HousingUpdateRequest {
   moveInDate?: string;
   completionDate?: string;
   address: string;
+  regionCode?: RegionCode;
   // address: AddressRequest;
   complexInfo?: ComplexInfo;
   livingEnvironment?: LivingEnvironment;
@@ -122,7 +143,8 @@ export interface HousingResponse {
   price: number;
   moveInDate?: string;
   completionDate?: string;
-  address: AddressResponse;
+  address: AddressResponse | string;
+  regionalCharacteristic?: RegionalCharacteristic;
   complexInfo?: ComplexInfo;
   livingEnvironment?: LivingEnvironment;
   isGoal: boolean;
@@ -138,6 +160,7 @@ export interface HousingListItem {
   housingType: HousingType;
   price: number;
   fullAddress: string;
+  regionCode?: RegionCode;
   isGoal: boolean;
   createdAt: string;
 }

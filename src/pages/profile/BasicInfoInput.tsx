@@ -28,6 +28,7 @@ interface BasicInfoFormData {
   currentAddress: string;
   userWorkplaceAddress: string;
   spouseWorkplaceAddress: string;
+  withholdingTaxSalary: string;
   investmentPropensity: InvestmentPropensity | '';
 }
 
@@ -52,6 +53,7 @@ const BasicInfoInput = () => {
     currentAddress: '',
     userWorkplaceAddress: '',
     spouseWorkplaceAddress: '',
+    withholdingTaxSalary: '',
     investmentPropensity: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -80,6 +82,7 @@ const BasicInfoInput = () => {
             currentAddress: getAddressString(profile.currentAddress),
             userWorkplaceAddress: getAddressString(profile.userWorkplaceAddress),
             spouseWorkplaceAddress: getAddressString(profile.spouseWorkplaceAddress),
+            withholdingTaxSalary: profile.withholdingTaxSalary ? String(profile.withholdingTaxSalary) : '',
             investmentPropensity: profile.investmentPropensity || '',
           });
         }
@@ -175,6 +178,7 @@ const BasicInfoInput = () => {
         currentAddress: formData.currentAddress,
         userWorkplaceAddress: formData.userWorkplaceAddress,
         spouseWorkplaceAddress: formData.spouseWorkplaceAddress || undefined,
+        withholdingTaxSalary: formData.withholdingTaxSalary ? parseInt(formData.withholdingTaxSalary.replace(/,/g, ''), 10) : undefined,
         investmentPropensity: formData.investmentPropensity as InvestmentPropensity,
       };
 
@@ -317,6 +321,46 @@ const BasicInfoInput = () => {
               placeholder="예: 서울시 서초구 서초동"
               value={formData.spouseWorkplaceAddress}
               onChange={(e) => handleInputChange('spouseWorkplaceAddress', e.target.value)}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 소득정보 섹션 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            소득정보
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            원천징수 영수증 기준 연소득을 입력해주세요
+          </Typography>
+
+          {/* 원천징수 소득 */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+              원천징수 소득 (연간){' '}
+              <Typography component="span" variant="body2" color="text.secondary">
+                (선택)
+              </Typography>
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="예: 50,000,000"
+              value={formData.withholdingTaxSalary}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                if (value) {
+                  handleInputChange('withholdingTaxSalary', parseInt(value, 10).toLocaleString('ko-KR'));
+                } else {
+                  handleInputChange('withholdingTaxSalary', '');
+                }
+              }}
+              InputProps={{
+                endAdornment: <Typography color="text.secondary">원</Typography>,
+              }}
+              inputProps={{ inputMode: 'numeric' }}
+              helperText="DTI/DSR 계산 시 참고됩니다"
             />
           </Box>
         </CardContent>

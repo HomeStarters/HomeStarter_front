@@ -19,6 +19,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+// Checkbox와 FormControlLabel은 이미 import됨
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -96,6 +97,7 @@ const SpouseAssetInput = () => {
   const [inputInterestRate, setInputInterestRate] = useState('');
   const [inputRepaymentType, setInputRepaymentType] = useState('');
   const [inputExpirationDate, setInputExpirationDate] = useState('');
+  const [inputIsExcludingCalculation, setInputIsExcludingCalculation] = useState(false);
 
   // 기존 배우자 자산정보 로드 (GET /api/v1/assets?ownerType=SPOUSE)
   useEffect(() => {
@@ -199,6 +201,7 @@ const SpouseAssetInput = () => {
     setInputInterestRate('');
     setInputRepaymentType('');
     setInputExpirationDate('');
+    setInputIsExcludingCalculation(false);
     setSheetOpen(true);
   };
 
@@ -211,6 +214,7 @@ const SpouseAssetInput = () => {
     setInputInterestRate(item.interestRate != null ? String(item.interestRate) : '');
     setInputRepaymentType(item.repaymentType || '');
     setInputExpirationDate(item.expirationDate || '');
+    setInputIsExcludingCalculation(item.isExcludingCalculation || false);
     setSheetOpen(true);
   };
 
@@ -223,6 +227,7 @@ const SpouseAssetInput = () => {
     setInputInterestRate('');
     setInputRepaymentType('');
     setInputExpirationDate('');
+    setInputIsExcludingCalculation(false);
   };
 
   // 항목 저장 (추가/수정)
@@ -252,6 +257,7 @@ const SpouseAssetInput = () => {
           interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
           repaymentType: inputRepaymentType || undefined,
           expirationDate: inputExpirationDate || undefined,
+          isExcludingCalculation: inputIsExcludingCalculation,
         }),
       };
       setCurrentData([...currentData, newItem]);
@@ -267,6 +273,7 @@ const SpouseAssetInput = () => {
                 interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
                 repaymentType: inputRepaymentType || undefined,
                 expirationDate: inputExpirationDate || undefined,
+                isExcludingCalculation: inputIsExcludingCalculation,
               }),
             }
           : item
@@ -487,6 +494,11 @@ const SpouseAssetInput = () => {
                                   만기일: {item.expirationDate}
                                 </Typography>
                               )}
+                              {item.isExcludingCalculation && (
+                                <Typography variant="caption" color="warning.main" display="block" sx={{ fontWeight: 500 }}>
+                                  ⚠️ 지출계산 제외
+                                </Typography>
+                              )}
                             </Box>
                           )}
                         </Box>
@@ -676,7 +688,29 @@ const SpouseAssetInput = () => {
                   value={inputExpirationDate}
                   onChange={(e) => setInputExpirationDate(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
                 />
+
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={inputIsExcludingCalculation}
+                        onChange={(e) => setInputIsExcludingCalculation(e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          지출계산 제외
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          DSR 계산 시 이 대출을 제외합니다
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
               </>
             )}
           </Box>

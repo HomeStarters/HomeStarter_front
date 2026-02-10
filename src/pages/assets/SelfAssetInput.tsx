@@ -14,9 +14,10 @@ import {
   Fab,
   Drawer,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -92,6 +93,7 @@ const SelfAssetInput = () => {
   const [inputInterestRate, setInputInterestRate] = useState('');
   const [inputRepaymentType, setInputRepaymentType] = useState('');
   const [inputExpirationDate, setInputExpirationDate] = useState('');
+  const [inputIsExcludingCalculation, setInputIsExcludingCalculation] = useState(false);
 
   // 기존 자산정보 로드 (GET /api/v1/assets)
   useEffect(() => {
@@ -178,6 +180,7 @@ const SelfAssetInput = () => {
     setInputInterestRate('');
     setInputRepaymentType('');
     setInputExpirationDate('');
+    setInputIsExcludingCalculation(false);
     setSheetOpen(true);
   };
 
@@ -190,6 +193,7 @@ const SelfAssetInput = () => {
     setInputInterestRate(item.interestRate != null ? String(item.interestRate) : '');
     setInputRepaymentType(item.repaymentType || '');
     setInputExpirationDate(item.expirationDate || '');
+    setInputIsExcludingCalculation(item.isExcludingCalculation || false);
     setSheetOpen(true);
   };
 
@@ -202,6 +206,7 @@ const SelfAssetInput = () => {
     setInputInterestRate('');
     setInputRepaymentType('');
     setInputExpirationDate('');
+    setInputIsExcludingCalculation(false);
   };
 
   // 항목 저장 (추가/수정)
@@ -231,6 +236,7 @@ const SelfAssetInput = () => {
           interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
           repaymentType: inputRepaymentType || undefined,
           expirationDate: inputExpirationDate || undefined,
+          isExcludingCalculation: inputIsExcludingCalculation,
         }),
       };
       setCurrentData([...currentData, newItem]);
@@ -246,6 +252,7 @@ const SelfAssetInput = () => {
                 interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
                 repaymentType: inputRepaymentType || undefined,
                 expirationDate: inputExpirationDate || undefined,
+                isExcludingCalculation: inputIsExcludingCalculation,
               }),
             }
           : item
@@ -449,6 +456,11 @@ const SelfAssetInput = () => {
                               만기일: {item.expirationDate}
                             </Typography>
                           )}
+                          {item.isExcludingCalculation && (
+                            <Typography variant="caption" color="warning.main" display="block" sx={{ fontWeight: 500 }}>
+                              ⚠️ 지출계산 제외
+                            </Typography>
+                          )}
                         </Box>
                       )}
                     </Box>
@@ -634,7 +646,29 @@ const SelfAssetInput = () => {
                   value={inputExpirationDate}
                   onChange={(e) => setInputExpirationDate(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
                 />
+
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={inputIsExcludingCalculation}
+                        onChange={(e) => setInputIsExcludingCalculation(e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          지출계산 제외
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          DSR 계산 시 이 대출을 제외합니다
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
               </>
             )}
           </Box>

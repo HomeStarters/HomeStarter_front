@@ -20,7 +20,6 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
   Delete as DeleteIcon,
-  Refresh as RefreshIcon,
   AccountBalance as LoanIcon,
   Home as HomeIcon,
   TrendingUp as TrendingUpIcon,

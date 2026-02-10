@@ -46,6 +46,7 @@ import {
   type TransportType,
   type SunlightLevel,
   type NoiseLevel,
+  REGION_CODE_LABELS,
 } from '../../services/housing/housingApi';
 import { calculatorApi, type CalculationRequest } from '../../services/calculator/calculatorApi';
 import { loanApi, type LoanProduct } from '../../services/loan/loanApi';
@@ -324,6 +325,13 @@ const HousingDetail = () => {
               <Typography color="text.secondary">위치</Typography>
               <Typography sx={{ fontWeight: 500, textAlign: 'right', maxWidth: '60%' }}>
                 {typeof housing.address === 'string' ? housing.address : housing.address?.fullAddress || '-'}
+              </Typography>
+            </Box>
+            <Divider />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography color="text.secondary">지역 구분</Typography>
+              <Typography sx={{ fontWeight: 500 }}>
+                {housing.regionalCharacteristic?.regionCode ? REGION_CODE_LABELS[housing.regionalCharacteristic.regionCode] || housing.regionalCharacteristic.regionCode : '-'}
               </Typography>
             </Box>
             <Divider />
