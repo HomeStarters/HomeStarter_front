@@ -72,6 +72,7 @@ const Dashboard = () => {
   const loadFinancialSummary = useCallback(async (): Promise<FinancialSummary> => {
     try {
       const response = await assetApi.getAssets();
+      console.log(response);
       if (response && response.combinedSummary) {
         return assetApi.calculateFinancialSummary(response);
       }

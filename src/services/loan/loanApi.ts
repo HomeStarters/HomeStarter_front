@@ -7,9 +7,10 @@ export interface LoanProductDTO {
   id: number;
   name: string;
   loanLimit: number;
-  ltvLimit: number;
-  dtiLimit: number;
   dsrLimit: number;
+  isApplyLtv: boolean;
+  isApplyDti: boolean;
+  isApplyDsr: boolean;
   interestRate: number;
   targetHousing: string;
   incomeRequirement?: string;
@@ -25,9 +26,10 @@ export interface LoanProduct {
   id: number;
   name: string;
   loanLimit: number;
-  ltvLimit: number;
-  dtiLimit: number;
   dsrLimit: number;
+  isApplyLtv: boolean;
+  isApplyDti: boolean;
+  isApplyDsr: boolean;
   targetHousing: string;
   incomeRequirement?: string;
   applicantRequirement?: string;
@@ -73,9 +75,10 @@ export interface LoanProductListParams {
 export interface CreateLoanProductRequest {
   name: string;
   loanLimit: number;
-  ltvLimit: number;
-  dtiLimit: number;
   dsrLimit: number;
+  isApplyLtv: boolean;
+  isApplyDti: boolean;
+  isApplyDsr: boolean;
   interestRate: number;
   targetHousing: string;
   incomeRequirement?: string;

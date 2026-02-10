@@ -8,11 +8,16 @@ export interface AssetItem {
   name: string;
   amount: number;
   category?: string;
+  interestRate?: number;
+  repaymentType?: string;
+  expirationDate?: string;
+  isExcludingCalculation?: boolean;
 }
 
 // 자산 정보 타입 (개별 사용자)
 export interface AssetInfo {
   id?: number;  // asset ID
+  assetId?: number;
   userId?: string;
   ownerType?: 'SELF' | 'SPOUSE';
   assets: AssetItem[];

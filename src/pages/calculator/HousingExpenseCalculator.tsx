@@ -14,6 +14,7 @@ import {
   CircularProgress,
   Backdrop,
   InputAdornment,
+  Chip,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -131,8 +132,8 @@ const HousingExpenseCalculator = () => {
         loanTerm: Number(loanTerm),
       });
 
-      if (response) {
-        const result = response;
+      if (response && response.data) {
+        const result = response.data;
         const eligibleText = result.loanAnalysis.isEligible
           ? '✅ 대출 기준을 충족합니다.'
           : '❌ 대출 기준을 충족하지 못합니다.';
@@ -161,7 +162,7 @@ const HousingExpenseCalculator = () => {
       } else {
         dispatch(
           openSnackbar({
-            message: response.message || '계산에 실패했습니다.',
+            message: response?.message || '계산에 실패했습니다.',
             severity: 'error',
           })
         );
@@ -261,29 +262,21 @@ const HousingExpenseCalculator = () => {
                   {selectedLoan.interestRate}%
                 </Typography>
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={12}>
                 <Typography variant="caption" color="text.secondary">
-                  LTV 한도
+                  기준 적용
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {selectedLoan.ltvLimit}%
-                </Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">
-                  DTI 한도
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {selectedLoan.dtiLimit}%
-                </Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">
-                  DSR 한도
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {selectedLoan.dsrLimit}%
-                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                  {selectedLoan.isApplyLtv && (
+                    <Chip label="LTV" size="small" color="primary" variant="outlined" />
+                  )}
+                  {selectedLoan.isApplyDti && (
+                    <Chip label="DTI" size="small" color="primary" variant="outlined" />
+                  )}
+                  {selectedLoan.isApplyDsr && (
+                    <Chip label="DSR" size="small" color="primary" variant="outlined" />
+                  )}
+                </Box>
               </Grid>
             </Grid>
           </Paper>

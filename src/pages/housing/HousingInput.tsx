@@ -43,6 +43,7 @@ import {
   type NoiseLevel,
   type HousingCreateRequest,
   type HousingUpdateRequest,
+  type RegionCode,
 } from '../../services/housing/housingApi';
 import Loading from '../../components/common/Loading';
 
@@ -77,6 +78,14 @@ const NOISE_OPTIONS: { value: NoiseLevel; label: string }[] = [
   { value: 'NOISY', label: '시끄러움' },
 ];
 
+// 지역 코드 옵션
+const REGION_CODE_OPTIONS: { value: RegionCode; label: string }[] = [
+  { value: 'OHA', label: '투기과열지구' },
+  { value: 'LTPZ', label: '토지거래허가구역' },
+  { value: 'AA', label: '조정대상지역' },
+  { value: 'G', label: '비규제지역' },
+];
+
 // 금액 포맷 함수
 const formatAmount = (amount: number): string => {
   return amount.toLocaleString('ko-KR');
@@ -93,6 +102,7 @@ interface BasicFormData {
   moveInDate: string;
   housingName: string;
   address: string;
+  regionCode: RegionCode;
   completionDate: string;
   price: string;
   houseArea: string;
@@ -134,6 +144,7 @@ const HousingInput = () => {
     moveInDate: '',
     housingName: '',
     address: '',
+    regionCode: '',
     completionDate: '',
     price: '',
     houseArea: '',
@@ -157,6 +168,7 @@ const HousingInput = () => {
       const response = await housingApi.getHousing(Number(editId));
       if (response.success && response.data) {
         const housing = response.data;
+        console.log(response);
 
         // 기본정보 세팅
         setBasicForm({
@@ -164,6 +176,7 @@ const HousingInput = () => {
           moveInDate: housing.moveInDate || '',
           housingName: housing.housingName,
           address: typeof housing.address === 'string' ? housing.address : housing.address?.fullAddress || '',
+          regionCode: housing.regionalCharacteristic?.regionCode || '',
           completionDate: housing.completionDate || '',
           price: housing.price ? formatAmount(housing.price) : '',
           houseArea: housing.complexInfo?.houseArea?.toString() || '',
@@ -354,6 +367,7 @@ const HousingInput = () => {
           moveInDate: basicForm.moveInDate,
           completionDate: basicForm.completionDate,
           address: basicForm.address.trim(),
+          regionCode: basicForm.regionCode || undefined,
           complexInfo: {
             houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
             totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
@@ -381,6 +395,7 @@ const HousingInput = () => {
           moveInDate: basicForm.moveInDate,
           completionDate: basicForm.completionDate,
           address: basicForm.address.trim(),
+          regionCode: basicForm.regionCode || undefined,
           complexInfo: {
             houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
             totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
@@ -494,6 +509,30 @@ const HousingInput = () => {
               value={basicForm.address}
               onChange={(e) => handleBasicChange('address', e.target.value)}
             />
+          </Box>
+
+          {/* 지역 구분 */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+              지역 구분{' '}
+              <Typography component="span" variant="body2" color="text.secondary">
+                (LTV/DTI 계산용)
+              </Typography>
+            </Typography>
+            <FormControl fullWidth>
+              <Select
+                value={basicForm.regionCode}
+                onChange={(e) => handleBasicChange('regionCode', e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="">선택안함</MenuItem>
+                {REGION_CODE_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           {/* 준공년월 */}
