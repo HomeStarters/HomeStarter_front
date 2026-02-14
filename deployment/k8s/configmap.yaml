@@ -7,11 +7,11 @@ data:
   runtime-env.js: |
     // 런타임 환경 설정 - 배포 시 환경별로 변경 가능
     window.__runtime_config__ = {
-      API_GROUP: "/api/v1",
-      USER_HOST: "http://homestarter-api.172.30.1.205.nip.io",
-      ASSET_HOST: "http://homestarter-api.172.30.1.205.nip.io",
-      HOUSING_HOST: "http://homestarter-api.172.30.1.205.nip.io",
-      LOAN_HOST: "http://homestarter-api.172.30.1.205.nip.io",
-      CALCULATOR_HOST: "http://homestarter-api.172.30.1.205.nip.io",
-      ROADMAP_HOST: "http://homestarter-api.172.30.1.205.nip.io"
+      USER_HOST: "http://homestarter-api.172.30.1.205.nip.io/users",
+      ASSET_HOST: "http://homestarter-api.172.30.1.205.nip.io/api/v1/assets",
+      HOUSING_HOST: "http://homestarter-api.172.30.1.205.nip.io/housing",
+      LOAN_HOST: "http://homestarter-api.172.30.1.205.nip.io/api/v1/loans",
+      LOAN_HOST: "http://homestarter-api.172.30.1.205.nip.io/api/v1/admin/loans",
+      CALCULATOR_HOST: "http://homestarter-api.172.30.1.205.nip.io/calculator",
+      ROADMAP_HOST: "http://homestarter-api.172.30.1.205.nip.io/roadmaps"
     };
