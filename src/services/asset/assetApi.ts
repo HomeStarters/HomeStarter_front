@@ -77,8 +77,8 @@ export interface AssetSaveRequest {
 // Asset API 서비스
 export const assetApi = {
   // 전체 자산정보 조회
-  getAssets: async (): Promise<ApiResponse<AssetsResponse>> => {
-    const response = await assetApiClient.get<ApiResponse<AssetsResponse>>(
+  getAssets: async (): Promise<AssetsResponse> => {
+    const response = await assetApiClient.get<AssetsResponse>(
       API_ENDPOINTS.ASSET.LIST
     );
     return response.data;
