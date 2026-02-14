@@ -132,8 +132,8 @@ const HousingExpenseCalculator = () => {
         loanTerm: Number(loanTerm),
       });
 
-      if (response && response.data) {
-        const result = response.data;
+      if (response) {
+        const result = response;
         const eligibleText = result.loanAnalysis.isEligible
           ? '✅ 대출 기준을 충족합니다.'
           : '❌ 대출 기준을 충족하지 못합니다.';
@@ -162,7 +162,7 @@ const HousingExpenseCalculator = () => {
       } else {
         dispatch(
           openSnackbar({
-            message: response?.message || '계산에 실패했습니다.',
+            message: response || '계산에 실패했습니다.',
             severity: 'error',
           })
         );

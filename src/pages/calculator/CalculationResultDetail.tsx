@@ -48,7 +48,6 @@ const CalculationResultDetail = () => {
     try {
       setLoading(true);
       const response = await calculatorApi.getResult(id);
-      console.log(response);
       if (response) {
         setResult(response);
       }

@@ -118,16 +118,16 @@ export const calculatorApi = {
   },
 
   // 계산 결과 상세 조회
-  getResult: async (id: string): Promise<ApiResponse<CalculationResultResponse>> => {
-    const response = await calculatorApiClient.get<ApiResponse<CalculationResultResponse>>(
+  getResult: async (id: string): Promise<CalculationResultResponse> => {
+    const response = await calculatorApiClient.get<CalculationResultResponse>(
       API_ENDPOINTS.CALCULATOR.RESULT_DETAIL(id)
     );
     return response.data;
   },
 
   // 입주 후 지출 계산 요청
-  calculateHousingExpenses: async (data: CalculationRequest): Promise<ApiResponse<CalculationResultResponse>> => {
-    const response = await calculatorApiClient.post<ApiResponse<CalculationResultResponse>>(
+  calculateHousingExpenses: async (data: CalculationRequest): Promise<CalculationResultResponse> => {
+    const response = await calculatorApiClient.post<CalculationResultResponse>(
       API_ENDPOINTS.CALCULATOR.HOUSING_EXPENSES,
       data
     );
