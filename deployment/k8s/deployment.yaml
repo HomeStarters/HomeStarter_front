@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-starter-front
+  namespace: homestarter-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: home-starter-front
+  template:
+    metadata:
+      labels:
+        app: home-starter-front
+    spec:
+      imagePullSecrets:
+        - name: homestarter
+      containers:
+        - name: home-starter-front
+          image: docker.io/daewoongjeon/home-starter-front:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 256m
+              memory: 256Mi
+            limits:
+              cpu: 256m
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          volumeMounts:
+            - name: runtime-env
+              mountPath: /usr/share/nginx/html/runtime-env.js
+              subPath: runtime-env.js
+      volumes:
+        - name: runtime-env
+          configMap:
+            name: cm-home-starter-front
