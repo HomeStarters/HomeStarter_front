@@ -1,0 +1,14 @@
+# service-nodeport.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-starter-front
+  namespace: homestarter-ns
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080    # 30000-32767 범위
+  selector:
+    app: home-starter-front
