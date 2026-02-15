@@ -27,7 +27,7 @@ docker build \
   --build-arg BUILD_FOLDER="deployment/container" \
   --build-arg EXPORT_PORT="8080" \
   -f ${DOCKER_FILE} \
-  -t home-starter-front:latest .
+  -t daewoongjeon/home-starter-front:latest .
 ```
 
 ### 4. 이미지 확인
