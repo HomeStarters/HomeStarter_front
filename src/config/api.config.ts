@@ -9,14 +9,15 @@ const getRuntimeConfig = () => {
 
 const runtimeConfig = getRuntimeConfig();
 
+// ?? 연산자 사용: null/undefined만 체크하여 빈 문자열("")도 유효한 값으로 처리
 export const API_CONFIG = {
-  API_GROUP: runtimeConfig?.API_GROUP || import.meta.env.VITE_API_GROUP || '/api/v1',
-  USER_HOST: runtimeConfig?.USER_HOST || import.meta.env.VITE_USER_HOST || 'http://localhost:8081',
-  ASSET_HOST: runtimeConfig?.ASSET_HOST || import.meta.env.VITE_ASSET_HOST || 'http://localhost:8082',
-  HOUSING_HOST: runtimeConfig?.HOUSING_HOST || import.meta.env.VITE_HOUSING_HOST || 'http://localhost:8084',
-  LOAN_HOST: runtimeConfig?.LOAN_HOST || import.meta.env.VITE_LOAN_HOST || 'http://localhost:8083',
-  CALCULATOR_HOST: runtimeConfig?.CALCULATOR_HOST || import.meta.env.VITE_CALCULATOR_HOST || 'http://localhost:8085',
-  ROADMAP_HOST: runtimeConfig?.ROADMAP_HOST || import.meta.env.VITE_ROADMAP_HOST || 'http://localhost:8086',
+  API_GROUP: runtimeConfig?.API_GROUP ?? import.meta.env.VITE_API_GROUP ?? '/api/v1',
+  USER_HOST: runtimeConfig?.USER_HOST ?? import.meta.env.VITE_USER_HOST ?? 'http://localhost:8081',
+  ASSET_HOST: runtimeConfig?.ASSET_HOST ?? import.meta.env.VITE_ASSET_HOST ?? 'http://localhost:8082',
+  HOUSING_HOST: runtimeConfig?.HOUSING_HOST ?? import.meta.env.VITE_HOUSING_HOST ?? 'http://localhost:8084',
+  LOAN_HOST: runtimeConfig?.LOAN_HOST ?? import.meta.env.VITE_LOAN_HOST ?? 'http://localhost:8083',
+  CALCULATOR_HOST: runtimeConfig?.CALCULATOR_HOST ?? import.meta.env.VITE_CALCULATOR_HOST ?? 'http://localhost:8085',
+  ROADMAP_HOST: runtimeConfig?.ROADMAP_HOST ?? import.meta.env.VITE_ROADMAP_HOST ?? 'http://localhost:8086',
 };
 
 // API 엔드포인트
