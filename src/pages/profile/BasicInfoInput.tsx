@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -10,10 +10,21 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   CircularProgress,
+  IconButton,
+  Drawer,
 } from '@mui/material';
+import {
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+  Add as AddIcon,
+  SwapHoriz as SwapHorizIcon,
+} from '@mui/icons-material';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { useAppSelector } from '../../hooks/useAppSelector';
 import { openSnackbar } from '../../store/slices/uiSlice';
 import { userApi, type UserProfileUpdateRequest } from '../../services/user/userApi';
+import { householdApi } from '../../services/household/householdApi';
+import type { HouseholdMember, HouseholdRole } from '../../types/household.types';
 
 // 투자성향 타입
 type InvestmentPropensity = 'HIGH' | 'MEDIUM' | 'LOW';
@@ -44,6 +55,7 @@ interface FormErrors {
 const BasicInfoInput = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -57,6 +69,36 @@ const BasicInfoInput = () => {
     investmentPropensity: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // 가구원 관리 상태
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
+  const [myRole, setMyRole] = useState<HouseholdRole | null>(null);
+  const [myMemberId, setMyMemberId] = useState<string | null>(null);
+  const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
+  const [targetUserId, setTargetUserId] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  // 가구원 목록 로드
+  const loadMembers = useCallback(async () => {
+    try {
+      const response = await householdApi.getMembers();
+      if (response.success && response.data) {
+        const memberList = response.data.members || [];
+        setMembers(memberList);
+        // 현재 사용자의 역할과 가구원 ID 판별
+        const myInfo = memberList.find((m) => m.userId === user?.userId);
+        if (myInfo) {
+          setMyRole(myInfo.role);
+          setMyMemberId(myInfo.userId);
+        } else {
+          setMyRole("OWNER");
+          setMyMemberId(null);
+        }
+      }
+    } catch (error) {
+      console.error('가구원 목록 로드 실패:', error);
+    }
+  }, [user?.userId]);
 
   // 기존 프로필 데이터 로드
   useEffect(() => {
@@ -94,7 +136,8 @@ const BasicInfoInput = () => {
     };
 
     loadProfile();
-  }, []);
+    loadMembers();
+  }, [loadMembers]);
 
   // 입력값 변경 핸들러
   const handleInputChange = (field: keyof BasicInfoFormData, value: string) => {
@@ -204,6 +247,77 @@ const BasicInfoInput = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 가구원 초대 바텀시트 열기
+  const handleOpenInviteSheet = () => {
+    setTargetUserId('');
+    setInviteSheetOpen(true);
+  };
+
+  // 가구원 초대 바텀시트 닫기
+  const handleCloseInviteSheet = () => {
+    setInviteSheetOpen(false);
+    setTargetUserId('');
+  };
+
+  // 가구원 초대 등록
+  const handleInviteMember = async () => {
+    if (!targetUserId.trim()) {
+      dispatch(openSnackbar({ message: '가구원 ID를 입력해주세요', severity: 'warning' }));
+      return;
+    }
+
+    setInviteLoading(true);
+    try {
+      const response = await householdApi.invite({ targetUserId: targetUserId.trim() });
+      if (response.success) {
+        dispatch(openSnackbar({ message: '가구원 초대가 요청되었습니다', severity: 'success' }));
+        handleCloseInviteSheet();
+        loadMembers();
+      }
+    } catch (error) {
+      // 에러는 client interceptor에서 처리
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  // 가구원 삭제
+  const handleDeleteMember = async (member: HouseholdMember) => {
+    try {
+      await householdApi.deleteMember(member.userId);
+      dispatch(openSnackbar({ message: '가구원이 삭제되었습니다', severity: 'success' }));
+      loadMembers();
+    } catch (error) {
+      // 에러는 client interceptor에서 처리
+    }
+  };
+
+  // OWNER 권한 위임
+  const handleDelegateOwner = async (member: HouseholdMember) => {
+    try {
+      await householdApi.delegateOwner(member.userId);
+      dispatch(openSnackbar({ message: `${member.name}님에게 소유자 권한을 위임했습니다`, severity: 'success' }));
+      loadMembers();
+    } catch (error) {
+      // 에러는 client interceptor에서 처리
+    }
+  };
+
+  // 가구 탈퇴
+  const handleLeaveHousehold = async () => {
+    console.log(myMemberId);
+    if (!myMemberId) return;
+    console.log("test");
+
+    try {
+      await householdApi.deleteMember(myMemberId);
+      dispatch(openSnackbar({ message: '가구에서 탈퇴되었습니다', severity: 'success' }));
+      loadMembers();
+    } catch (error) {
+      // 에러는 client interceptor에서 처리
     }
   };
 
@@ -446,6 +560,93 @@ const BasicInfoInput = () => {
         </CardContent>
       </Card>
 
+      {/* 가구원 관리 섹션 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              가구원 관리
+            </Typography>
+            {myRole === 'OWNER' && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={handleOpenInviteSheet}
+              >
+                추가
+              </Button>
+            )}
+          </Box>
+
+          {members.length === 0 ? (
+            <Box
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                bgcolor: 'grey.100',
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                등록된 가구원이 없습니다
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {members.map((member) => (
+                <Card key={member.userId} variant="outlined">
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {member.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {member.userId} · {member.role === 'OWNER' ? '소유자' : '구성원'}
+                        </Typography>
+                      </Box>
+                      {myRole === 'OWNER' && member.userId !== user?.userId && (
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<SwapHorizIcon />}
+                            onClick={() => handleDelegateOwner(member)}
+                          >
+                            권한위임
+                          </Button>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteMember(member)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
+
+          {/* MEMBER이거나 OWNER가 혼자인 경우 가구 탈퇴 버튼 */}
+          {(myRole === 'MEMBER' || (myRole === 'OWNER' && members.length === 1)) && (
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={handleLeaveHousehold}
+            >
+              가구 탈퇴
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 다음 버튼 */}
       <Box
         sx={{
@@ -471,6 +672,57 @@ const BasicInfoInput = () => {
           {loading ? <CircularProgress size={24} color="inherit" /> : '다음'}
         </Button>
       </Box>
+
+      {/* 가구원 초대 바텀시트 */}
+      <Drawer
+        anchor="bottom"
+        open={inviteSheetOpen}
+        onClose={handleCloseInviteSheet}
+        PaperProps={{
+          sx: {
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            maxHeight: '80vh',
+          },
+        }}
+      >
+        <Box sx={{ p: 3 }}>
+          {/* 시트 헤더 */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              가구원 추가
+            </Typography>
+            <IconButton onClick={handleCloseInviteSheet} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* 가구원 ID 입력 */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+              가구원 ID
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="초대할 사용자의 ID를 입력하세요"
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+            />
+          </Box>
+
+          {/* 등록 버튼 */}
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={!targetUserId.trim() || inviteLoading}
+            onClick={handleInviteMember}
+            sx={{ py: 1.5 }}
+          >
+            {inviteLoading ? <CircularProgress size={24} color="inherit" /> : '등록'}
+          </Button>
+        </Box>
+      </Drawer>
     </Box>
   );
 };
