@@ -119,7 +119,7 @@ const MainLayout = () => {
     try {
       await notificationApi.markAsRead(id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       loadUnreadCount();
     } catch (error) {
@@ -137,7 +137,7 @@ const MainLayout = () => {
       await householdApi.acceptInvite(notification.referenceId);
       await notificationApi.markAsRead(notification.id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
       );
       loadUnreadCount();
       dispatch(openSnackbar({ message: '가구원 초대를 수락했습니다', severity: 'success' }));
@@ -156,7 +156,7 @@ const MainLayout = () => {
       await householdApi.rejectInvite(notification.referenceId);
       await notificationApi.markAsRead(notification.id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
       );
       loadUnreadCount();
       dispatch(openSnackbar({ message: '가구원 초대를 거절했습니다', severity: 'info' }));
