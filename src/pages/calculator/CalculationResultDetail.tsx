@@ -436,7 +436,7 @@ const CalculationResultDetail = () => {
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              ※ DSR 계산은 현재 기준의 대출 잔액 기반으로 계산됩니다.
+              ※ DSR 계산은 대출자산의 대출실행 금액 기준 원리금균등상환으로 가정하여 진행됩니다.
             </Typography>
           </Box>
 
