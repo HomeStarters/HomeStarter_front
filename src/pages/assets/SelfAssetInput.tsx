@@ -94,6 +94,8 @@ const SelfAssetInput = () => {
   const [inputRepaymentType, setInputRepaymentType] = useState('');
   const [inputExpirationDate, setInputExpirationDate] = useState('');
   const [inputIsExcludingCalculation, setInputIsExcludingCalculation] = useState(false);
+  const [inputExecutedAmount, setInputExecutedAmount] = useState('');
+  const [inputRepaymentPeriod, setInputRepaymentPeriod] = useState('');
 
   // 기존 자산정보 로드 (GET /api/v1/assets)
   useEffect(() => {
@@ -181,6 +183,8 @@ const SelfAssetInput = () => {
     setInputRepaymentType('');
     setInputExpirationDate('');
     setInputIsExcludingCalculation(false);
+    setInputExecutedAmount('');
+    setInputRepaymentPeriod('');
     setSheetOpen(true);
   };
 
@@ -194,6 +198,8 @@ const SelfAssetInput = () => {
     setInputRepaymentType(item.repaymentType || '');
     setInputExpirationDate(item.expirationDate || '');
     setInputIsExcludingCalculation(item.isExcludingCalculation || false);
+    setInputExecutedAmount(item.executedAmount != null ? formatAmount(item.executedAmount) : '');
+    setInputRepaymentPeriod(item.repaymentPeriod != null ? String(item.repaymentPeriod) : '');
     setSheetOpen(true);
   };
 
@@ -207,6 +213,8 @@ const SelfAssetInput = () => {
     setInputRepaymentType('');
     setInputExpirationDate('');
     setInputIsExcludingCalculation(false);
+    setInputExecutedAmount('');
+    setInputRepaymentPeriod('');
   };
 
   // 항목 저장 (추가/수정)
@@ -237,6 +245,8 @@ const SelfAssetInput = () => {
           repaymentType: inputRepaymentType || undefined,
           expirationDate: inputExpirationDate || undefined,
           isExcludingCalculation: inputIsExcludingCalculation,
+          executedAmount: inputExecutedAmount ? parseAmount(inputExecutedAmount) : undefined,
+          repaymentPeriod: inputRepaymentPeriod ? parseInt(inputRepaymentPeriod, 10) : undefined,
         }),
       };
       setCurrentData([...currentData, newItem]);
@@ -253,6 +263,8 @@ const SelfAssetInput = () => {
                 repaymentType: inputRepaymentType || undefined,
                 expirationDate: inputExpirationDate || undefined,
                 isExcludingCalculation: inputIsExcludingCalculation,
+                executedAmount: inputExecutedAmount ? parseAmount(inputExecutedAmount) : undefined,
+                repaymentPeriod: inputRepaymentPeriod ? parseInt(inputRepaymentPeriod, 10) : undefined,
               }),
             }
           : item
@@ -451,6 +463,16 @@ const SelfAssetInput = () => {
                               상환: {getRepaymentTypeLabel(item.repaymentType)}
                             </Typography>
                           )}
+                          {item.executedAmount != null && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              대출실행금액: {formatAmount(item.executedAmount)}원
+                            </Typography>
+                          )}
+                          {item.repaymentPeriod != null && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              상환기간: {item.repaymentPeriod}개월
+                            </Typography>
+                          )}
                           {item.expirationDate && (
                             <Typography variant="caption" color="text.secondary" display="block">
                               만기일: {item.expirationDate}
@@ -636,6 +658,42 @@ const SelfAssetInput = () => {
                     ))}
                   </Select>
                 </FormControl>
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  대출실행 금액 (원)
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="0"
+                  value={inputExecutedAmount}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                    if (numericValue) {
+                      setInputExecutedAmount(formatAmount(parseInt(numericValue, 10)));
+                    } else {
+                      setInputExecutedAmount('');
+                    }
+                  }}
+                  inputProps={{ inputMode: 'numeric' }}
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  상환기간 (개월)
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="예: 360"
+                  value={inputRepaymentPeriod}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*$/.test(val)) {
+                      setInputRepaymentPeriod(val);
+                    }
+                  }}
+                  inputProps={{ inputMode: 'numeric' }}
+                  sx={{ mb: 2 }}
+                />
 
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                   만기일

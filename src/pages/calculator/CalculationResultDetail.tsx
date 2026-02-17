@@ -425,6 +425,21 @@ const CalculationResultDetail = () => {
             )}
           </Box>
 
+          <Box
+            sx={{
+              mt: 1,
+              mb: 2,
+              px: 1.5,
+              py: 1,
+              borderRadius: 1,
+              bgcolor: 'rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              ※ DSR 계산은 현재 기준의 대출 잔액 기반으로 계산됩니다.
+            </Typography>
+          </Box>
+
           <Divider sx={{ my: 2 }} />
 
           {/* 충족여부 메시지 */}

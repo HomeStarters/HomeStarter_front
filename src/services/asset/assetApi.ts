@@ -12,6 +12,8 @@ export interface AssetItem {
   repaymentType?: string;
   expirationDate?: string;
   isExcludingCalculation?: boolean;
+  executedAmount?: number;
+  repaymentPeriod?: number;
 }
 
 // 자산 정보 타입 (개별 사용자)
