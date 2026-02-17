@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
     SELF: `${API_CONFIG.API_GROUP}/assets/self`,
     SPOUSE: `${API_CONFIG.API_GROUP}/assets/spouse`,
     LIST: `${API_CONFIG.API_GROUP}/assets`,
+    HOUSEHOLD: `${API_CONFIG.API_GROUP}/assets/household`,
     DETAIL: (id: string) => `${API_CONFIG.API_GROUP}/assets/${id}`,
     CREATE_BY_USER: (userId: string, ownerType: 'SELF' | 'SPOUSE') =>
       `${API_CONFIG.API_GROUP}/assets/${userId}?ownerType=${ownerType}`,
