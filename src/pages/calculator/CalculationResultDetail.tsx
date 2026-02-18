@@ -214,7 +214,7 @@ const CalculationResultDetail = () => {
       </Card>
 
       {/* 계산 참여 가구원 */}
-      {result.householdMembers && result.householdMembers.length > 0 && (
+      {result.includedHouseholdMembers && result.includedHouseholdMembers.length > 0 && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -224,10 +224,10 @@ const CalculationResultDetail = () => {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {result.householdMembers.map((member) => (
+              {result.includedHouseholdMembers.map((member) => (
                 <Chip
                   key={member.userId}
-                  label={`${member.name} (${member.role === 'OWNER' ? '가구장' : '가구원'})`}
+                  label={member.userName}
                   variant="outlined"
                   size="small"
                   color="primary"
