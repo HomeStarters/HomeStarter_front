@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
     SELF: `${API_CONFIG.API_GROUP}/assets/self`,
     SPOUSE: `${API_CONFIG.API_GROUP}/assets/spouse`,
     LIST: `${API_CONFIG.API_GROUP}/assets`,
+    HOUSEHOLD: `${API_CONFIG.API_GROUP}/assets/household`,
     DETAIL: (id: string) => `${API_CONFIG.API_GROUP}/assets/${id}`,
     CREATE_BY_USER: (userId: string, ownerType: 'SELF' | 'SPOUSE') =>
       `${API_CONFIG.API_GROUP}/assets/${userId}?ownerType=${ownerType}`,
@@ -67,6 +68,23 @@ export const API_ENDPOINTS = {
     RESULTS: '/calculator/results',
     RESULT_DETAIL: (id: string) => `/calculator/results/${id}`,
     DELETE_RESULT: (id: string) => `/calculator/results/${id}`,
+  },
+
+  // Household Service
+  HOUSEHOLD: {
+    INVITE: `${API_CONFIG.API_GROUP}/household/invite`,
+    INVITE_ACCEPT: (id: number) => `${API_CONFIG.API_GROUP}/household/invite/${id}/accept`,
+    INVITE_REJECT: (id: number) => `${API_CONFIG.API_GROUP}/household/invite/${id}/reject`,
+    MEMBERS: `${API_CONFIG.API_GROUP}/household/members`,
+    MEMBER_DELETE: (id: string) => `${API_CONFIG.API_GROUP}/household/members/${id}`,
+    DELEGATE_OWNER: (userId: string) => `${API_CONFIG.API_GROUP}/household/members/${userId}/delegate-owner`,
+  },
+
+  // Notification Service
+  NOTIFICATION: {
+    LIST: `${API_CONFIG.API_GROUP}/notifications`,
+    READ: (id: number) => `${API_CONFIG.API_GROUP}/notifications/${id}/read`,
+    UNREAD_COUNT: `${API_CONFIG.API_GROUP}/notifications/unread-count`,
   },
 
   // Roadmap Service

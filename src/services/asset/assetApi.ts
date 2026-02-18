@@ -12,6 +12,8 @@ export interface AssetItem {
   repaymentType?: string;
   expirationDate?: string;
   isExcludingCalculation?: boolean;
+  executedAmount?: number;
+  repaymentPeriod?: number;
 }
 
 // 자산 정보 타입 (개별 사용자)
@@ -58,6 +60,20 @@ export interface AssetsResponse {
   combinedSummary: CombinedSummary;
 }
 
+// 가구원 자산 응답 타입
+export interface HouseholdMemberAsset {
+  userId: string;
+  userName?: string;
+  role: string;
+  assets: AssetsResponse;
+}
+
+export interface HouseholdAssetResponse {
+  householdId?: string;
+  members: HouseholdMemberAsset[];
+  householdSummary: CombinedSummary;
+}
+
 // 재무 요약 타입 (대시보드용)
 export interface FinancialSummaryResponse {
   totalAssets: number;
@@ -76,6 +92,14 @@ export interface AssetSaveRequest {
 
 // Asset API 서비스
 export const assetApi = {
+  // 가구원 전체 자산정보 조회
+  getHouseholdAssets: async (): Promise<HouseholdAssetResponse> => {
+    const response = await assetApiClient.get<HouseholdAssetResponse>(
+      API_ENDPOINTS.ASSET.HOUSEHOLD
+    );
+    return response.data;
+  },
+
   // 전체 자산정보 조회
   getAssets: async (): Promise<AssetsResponse> => {
     const response = await assetApiClient.get<AssetsResponse>(

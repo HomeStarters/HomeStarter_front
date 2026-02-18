@@ -15,17 +15,26 @@ import {
   Backdrop,
   InputAdornment,
   Chip,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
+import { People as PeopleIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { useAppSelector } from '../../hooks/useAppSelector';
 import { openSnackbar } from '../../store/slices/uiSlice';
 import Loading from '../../components/common/Loading';
 import { housingApi } from '../../services/housing/housingApi';
 import { loanApi } from '../../services/loan/loanApi';
 import { calculatorApi } from '../../services/calculator/calculatorApi';
+import { householdApi } from '../../services/household/householdApi';
 import type { HousingListItem } from '../../services/housing/housingApi';
 import type { LoanProductDTO } from '../../services/loan/loanApi';
+import type { HouseholdMember } from '../../types/household.types';
 
 // 금액 포맷 (만원 단위)
 const formatCurrency = (amount: number): string => {
@@ -43,6 +52,7 @@ const formatCurrency = (amount: number): string => {
 const HousingExpenseCalculator = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const currentUser = useAppSelector((state) => state.auth.user);
 
   // 데이터 로딩 상태
   const [pageLoading, setPageLoading] = useState(true);
@@ -51,6 +61,10 @@ const HousingExpenseCalculator = () => {
   // 목록 데이터
   const [housings, setHousings] = useState<HousingListItem[]>([]);
   const [loanProducts, setLoanProducts] = useState<LoanProductDTO[]>([]);
+  const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([]);
+
+  // 가구원 선택 상태
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
   // 폼 상태
   const [selectedHousingId, setSelectedHousingId] = useState<string>('');
@@ -65,9 +79,10 @@ const HousingExpenseCalculator = () => {
   const loadInitialData = useCallback(async () => {
     try {
       setPageLoading(true);
-      const [housingRes, loanRes] = await Promise.all([
+      const [housingRes, loanRes, memberRes] = await Promise.all([
         housingApi.getHousings({ page: 0, size: 100, sort: 'createdAt', direction: 'DESC' }),
         loanApi.getLoanProducts({ page: 0, size: 100, sortBy: 'createdAt', sortOrder: 'desc' }),
+        householdApi.getMembers(),
       ]);
 
       if (housingRes.success && housingRes.data?.housings) {
@@ -77,6 +92,16 @@ const HousingExpenseCalculator = () => {
       if (loanRes.success && loanRes.data?.content) {
         // 활성화된 대출상품만 필터링
         setLoanProducts(loanRes.data.content.filter((l) => l.active));
+      }
+
+      if (memberRes.success && memberRes.data?.members) {
+        // 본인 제외한 가구원만 표시
+        const others = memberRes.data.members.filter(
+          (m) => m.userId !== currentUser?.userId
+        );
+        setHouseholdMembers(others);
+        // 기본적으로 모든 가구원 선택
+        setSelectedMemberIds(others.map((m) => m.userId));
       }
     } catch (error) {
       console.error('초기 데이터 로드 실패:', error);
@@ -110,6 +135,15 @@ const HousingExpenseCalculator = () => {
     setLoanAmount(value);
   };
 
+  // 가구원 선택 토글
+  const handleMemberToggle = (userId: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
   // 대출기간 변경 핸들러
   const handleLoanTermChange = (e: SelectChangeEvent<string>) => {
     setLoanTerm(e.target.value);
@@ -130,6 +164,7 @@ const HousingExpenseCalculator = () => {
         loanProductId: selectedLoanId,
         loanAmount: Number(loanAmount),
         loanTerm: Number(loanTerm),
+        householdMemberIds: selectedMemberIds,
       });
 
       if (response) {
@@ -218,6 +253,48 @@ const HousingExpenseCalculator = () => {
             ))}
           </Select>
         </FormControl>
+
+        {/* 가구원 선택 */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <PeopleIcon fontSize="small" color="primary" />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              계산 참여 가구원
+            </Typography>
+          </Box>
+          {householdMembers.length > 0 ? (
+            <Paper variant="outlined" sx={{ p: 1 }}>
+              <List dense disablePadding>
+                {householdMembers.map((member) => (
+                  <ListItem
+                    key={member.userId}
+                    disablePadding
+                    sx={{ px: 1 }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      <Checkbox
+                        edge="start"
+                        checked={selectedMemberIds.includes(member.userId)}
+                        onChange={() => handleMemberToggle(member.userId)}
+                        size="small"
+                      />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={member.name}
+                      secondary={member.role === 'OWNER' ? '가구장' : '가구원'}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                      secondaryTypographyProps={{ variant: 'caption' }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              등록된 가구원이 없습니다
+            </Typography>
+          )}
+        </Box>
 
         {/* 대출상품 선택 */}
         <FormControl fullWidth sx={{ mb: 3 }}>

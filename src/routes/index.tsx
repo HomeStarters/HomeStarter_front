@@ -15,6 +15,7 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import BasicInfoInput from '../pages/profile/BasicInfoInput';
 
 // Assets
+import AssetManagement from '../pages/assets/AssetManagement';
 import SelfAssetInput from '../pages/assets/SelfAssetInput';
 import SpouseAssetInput from '../pages/assets/SpouseAssetInput';
 
@@ -73,10 +74,9 @@ const router = createBrowserRouter([
       },
 
       // Assets
-      // TODO: 자산 페이지 추가
       {
         path: '/assets',
-        element: <div>자산정보 관리 페이지</div>,
+        element: <AssetManagement />,
       },
       {
         path: '/assets/self',
