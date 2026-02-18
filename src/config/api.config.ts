@@ -82,9 +82,9 @@ export const API_ENDPOINTS = {
 
   // Notification Service
   NOTIFICATION: {
-    LIST: `${API_CONFIG.API_GROUP}/notifications`,
-    READ: (id: number) => `${API_CONFIG.API_GROUP}/notifications/${id}/read`,
-    UNREAD_COUNT: `${API_CONFIG.API_GROUP}/notifications/unread-count`,
+    LIST: '/users/notifications',
+    READ: (id: number) => `/users/notifications/${id}/read`,
+    UNREAD_COUNT: '/users/notifications/unread-count',
   },
 
   // Roadmap Service
