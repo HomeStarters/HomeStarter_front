@@ -72,12 +72,12 @@ export const API_ENDPOINTS = {
 
   // Household Service
   HOUSEHOLD: {
-    INVITE: `${API_CONFIG.API_GROUP}/household/invite`,
-    INVITE_ACCEPT: (id: number) => `${API_CONFIG.API_GROUP}/household/invite/${id}/accept`,
-    INVITE_REJECT: (id: number) => `${API_CONFIG.API_GROUP}/household/invite/${id}/reject`,
-    MEMBERS: `${API_CONFIG.API_GROUP}/household/members`,
-    MEMBER_DELETE: (id: string) => `${API_CONFIG.API_GROUP}/household/members/${id}`,
-    DELEGATE_OWNER: (userId: string) => `${API_CONFIG.API_GROUP}/household/members/${userId}/delegate-owner`,
+    INVITE: '/users/household/invite',
+    INVITE_ACCEPT: (id: number) => `/users/household/invite/${id}/accept`,
+    INVITE_REJECT: (id: number) => `/users/household/invite/${id}/reject`,
+    MEMBERS: '/users/household/members',
+    MEMBER_DELETE: (id: string) => `/users/household/members/${id}`,
+    DELEGATE_OWNER: (userId: string) => `/users/household/members/${userId}/delegate-owner`,
   },
 
   // Notification Service
