@@ -30,6 +30,13 @@ export interface AfterMoveInDto {
   monthlyAvailableFunds: number;
 }
 
+// 계산 참여 가구원 정보
+export interface CalculationResultMember {
+  userId: string;
+  name: string;
+  role: string;
+}
+
 // 계산 결과 응답 타입
 export interface CalculationResultResponse {
   id: string;
@@ -45,6 +52,7 @@ export interface CalculationResultResponse {
   loanAnalysis: LoanAnalysisDto;
   afterMoveIn: AfterMoveInDto;
   status: string;
+  householdMembers?: CalculationResultMember[];
 }
 
 // 계산 결과 목록 항목 타입
@@ -81,6 +89,7 @@ export interface CalculationRequest {
   loanProductId: string;
   loanAmount: number;
   loanTerm: number;
+  householdMemberIds: string[];
 }
 
 // Calculator API 서비스

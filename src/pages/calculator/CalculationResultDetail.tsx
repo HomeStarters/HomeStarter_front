@@ -24,6 +24,7 @@ import {
   Home as HomeIcon,
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -211,6 +212,31 @@ const CalculationResultDetail = () => {
           </Typography>
         </CardContent>
       </Card>
+
+      {/* 계산 참여 가구원 */}
+      {result.householdMembers && result.householdMembers.length > 0 && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <PeopleIcon color="primary" fontSize="small" />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                계산 참여 가구원
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {result.householdMembers.map((member) => (
+                <Chip
+                  key={member.userId}
+                  label={`${member.name} (${member.role === 'OWNER' ? '가구장' : '가구원'})`}
+                  variant="outlined"
+                  size="small"
+                  color="primary"
+                />
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 재무 현황 */}
       <Card sx={{ mb: 2 }}>
