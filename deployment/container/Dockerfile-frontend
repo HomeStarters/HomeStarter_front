@@ -21,6 +21,12 @@ FROM nginx:stable-alpine
 ARG BUILD_FOLDER
 ARG EXPORT_PORT
 
+# Set timezone to Asia/Seoul
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Seoul /etc/localtime && \
+    echo "Asia/Seoul" > /etc/timezone && \
+    apk del tzdata
+
 # Create nginx user if it doesn't exist
 RUN adduser -S nginx || true
 
