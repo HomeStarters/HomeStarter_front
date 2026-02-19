@@ -139,14 +139,16 @@ const HousingList = () => {
     if (!deleteTargetId) return;
 
     try {
-      await housingApi.deleteHousing(deleteTargetId);
-      dispatch(
-        openSnackbar({
-          message: '주택이 삭제되었습니다',
-          severity: 'success',
-        })
-      );
-      loadAllHousings();
+      if (confirm("삭제 하시겠습니까?")) {
+        await housingApi.deleteHousing(deleteTargetId);
+        dispatch(
+          openSnackbar({
+            message: '주택이 삭제되었습니다',
+            severity: 'success',
+          })
+        );
+        loadAllHousings();
+      }
     } catch (error) {
       console.error('주택 삭제 실패:', error);
       dispatch(

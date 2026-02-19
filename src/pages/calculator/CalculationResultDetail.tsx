@@ -74,14 +74,16 @@ const CalculationResultDetail = () => {
     if (!id) return;
 
     try {
-      await calculatorApi.deleteResult(id);
-      dispatch(
-        openSnackbar({
-          message: '계산 결과가 삭제되었습니다',
-          severity: 'success',
-        })
-      );
-      navigate('/calculator/results', { replace: true });
+      if (confirm("삭제 하시겠습니까?")) {
+        await calculatorApi.deleteResult(id);
+        dispatch(
+          openSnackbar({
+            message: '계산 결과가 삭제되었습니다',
+            severity: 'success',
+          })
+        );
+        navigate('/calculator/results', { replace: true });
+      }
     } catch (error) {
       console.error('계산 결과 삭제 실패:', error);
       dispatch(

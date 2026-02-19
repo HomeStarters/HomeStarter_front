@@ -169,23 +169,27 @@ const LoanManagement = () => {
 
       if (editingId) {
         // 수정
-        const updateData: UpdateLoanProductRequest = {
-          ...formData,
-          active: formData.active ?? true,
-        };
-        const response = await loanApi.updateLoanProduct(editingId, updateData);
-        if (response.success) {
-          alert('대출상품이 수정되었습니다');
-          handleCloseForm();
-          loadProducts();
+        if (confirm("수정 하시겠습니까?")) {
+          const updateData: UpdateLoanProductRequest = {
+            ...formData,
+            active: formData.active ?? true,
+          };
+          const response = await loanApi.updateLoanProduct(editingId, updateData);
+          if (response.success) {
+            alert('대출상품이 수정되었습니다');
+            handleCloseForm();
+            loadProducts();
+          }
         }
       } else {
         // 등록
-        const response = await loanApi.createLoanProduct(formData);
-        if (response.success) {
-          alert('대출상품이 등록되었습니다');
-          handleCloseForm();
-          loadProducts();
+        if (confirm("등록 하시겠습니까?")) {
+          const response = await loanApi.createLoanProduct(formData);
+          if (response.success) {
+            alert('대출상품이 등록되었습니다');
+            handleCloseForm();
+            loadProducts();
+          }
         }
       }
     } catch (error) {
@@ -207,10 +211,12 @@ const LoanManagement = () => {
     if (!deleteTargetId) return;
 
     try {
-      const response = await loanApi.deleteLoanProduct(deleteTargetId);
-      if (response.success) {
-        alert('대출상품이 삭제되었습니다');
-        loadProducts();
+      if (confirm("삭제 하시겠습니까?")) {
+        const response = await loanApi.deleteLoanProduct(deleteTargetId);
+        if (response.success) {
+          alert('대출상품이 삭제되었습니다');
+          loadProducts();
+        }
       }
     } catch (error) {
       console.error('대출상품 삭제 실패:', error);

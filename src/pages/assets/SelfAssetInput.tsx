@@ -287,20 +287,22 @@ const SelfAssetInput = () => {
 
     // 서버에 저장된 항목은 API 호출하여 삭제
     try {
-      const assetType = TAB_CONFIG[activeTab].key;
-      await assetApi.deleteAssetItem(assetType, itemId);
+      if (confirm("삭제 하시겠습니까?")) {
+        const assetType = TAB_CONFIG[activeTab].key;
+        await assetApi.deleteAssetItem(assetType, itemId);
 
-      // 성공하면 로컬 상태 업데이트
-    const currentData = getCurrentData();
-    const updatedData = currentData.filter((item) => item.id !== itemId);
-    setCurrentData(updatedData);
+        // 성공하면 로컬 상태 업데이트
+        const currentData = getCurrentData();
+        const updatedData = currentData.filter((item) => item.id !== itemId);
+        setCurrentData(updatedData);
 
-      dispatch(
-        openSnackbar({
-          message: '항목이 삭제되었습니다',
-          severity: 'success',
-        })
-      );
+        dispatch(
+          openSnackbar({
+            message: '항목이 삭제되었습니다',
+            severity: 'success',
+          })
+        );
+      }
     } catch (error) {
       console.error('항목 삭제 실패:', error);
       dispatch(
@@ -340,7 +342,9 @@ const SelfAssetInput = () => {
 
       if (assetId) {
         // 기존 자산정보가 있으면 수정 API 호출
-        response = await assetApi.updateAssets(assetId, requestData);
+        if (confirm("수정 하시겠습니까?")) {
+          response = await assetApi.updateAssets(assetId, requestData);
+        }
       } else {
         // 기존 자산정보가 없으면 직접 입력 API 호출
         if (!user?.userId) {
@@ -353,7 +357,9 @@ const SelfAssetInput = () => {
           setLoading(false);
           return;
         }
-        response = await assetApi.createAssetsByUserId(user.userId, 'SELF', requestData);
+        if (confirm("등록 하시겠습니까?")) {
+          response = await assetApi.createAssetsByUserId(user.userId, 'SELF', requestData);
+        }
       }
 
       if (response) {
@@ -364,8 +370,11 @@ const SelfAssetInput = () => {
           })
         );
 
-        // 배우자 자산정보 입력 화면으로 이동
-        navigate('/assets/spouse');
+        // // 배우자 자산정보 입력 화면으로 이동
+        // navigate('/assets/spouse');
+
+        // 대시보드로 이동
+        navigate('/dashboard');
       }
     } catch (error) {
       dispatch(

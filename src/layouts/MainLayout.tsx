@@ -134,13 +134,15 @@ const MainLayout = () => {
     if (!notification.referenceId) return;
     setActionLoadingId(notification.id);
     try {
-      await householdApi.acceptInvite(notification.referenceId);
-      await notificationApi.markAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
-      );
-      loadUnreadCount();
-      dispatch(openSnackbar({ message: '가구원 초대를 수락했습니다', severity: 'success' }));
+      if (confirm("자산정보가 가구내 공유됩니다. 수락하시겠습니까?")) {
+        await householdApi.acceptInvite(notification.referenceId);
+        await notificationApi.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
+        );
+        loadUnreadCount();
+        dispatch(openSnackbar({ message: '가구원 초대를 수락했습니다', severity: 'success' }));
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     } finally {
@@ -153,13 +155,15 @@ const MainLayout = () => {
     if (!notification.referenceId) return;
     setActionLoadingId(notification.id);
     try {
-      await householdApi.rejectInvite(notification.referenceId);
-      await notificationApi.markAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
-      );
-      loadUnreadCount();
-      dispatch(openSnackbar({ message: '가구원 초대를 거절했습니다', severity: 'info' }));
+      if (confirm("거절 하시겠습니까?")) {
+        await householdApi.rejectInvite(notification.referenceId);
+        await notificationApi.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
+        );
+        loadUnreadCount();
+        dispatch(openSnackbar({ message: '가구원 초대를 거절했습니다', severity: 'info' }));
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     } finally {

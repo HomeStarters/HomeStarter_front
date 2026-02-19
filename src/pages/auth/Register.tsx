@@ -114,23 +114,25 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await userApi.register({
-        userId: formData.userId,
-        password: formData.password,
-        passwordConfirm: formData.confirmPassword,
-        name: formData.name,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        agreeTerms: formData.agreeTerms,
-      });
+      if (confirm("회원가입 하시겠습니까?")) {
+        await userApi.register({
+          userId: formData.userId,
+          password: formData.password,
+          passwordConfirm: formData.confirmPassword,
+          name: formData.name,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+          agreeTerms: formData.agreeTerms,
+        });
 
-      dispatch(
-        openSnackbar({
-          message: '회원가입이 완료되었습니다. 로그인해주세요.',
-          severity: 'success',
-        })
-      );
-      navigate('/login');
+        dispatch(
+          openSnackbar({
+            message: '회원가입이 완료되었습니다. 로그인해주세요.',
+            severity: 'success',
+          })
+        );
+        navigate('/login');
+      }
     } catch (error) {
       // API client의 인터셉터에서 에러 메시지를 처리하므로 추가 처리 불필요
       console.error('회원가입 실패:', error);
