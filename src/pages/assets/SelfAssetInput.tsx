@@ -278,12 +278,12 @@ const SelfAssetInput = () => {
   // 항목 삭제
   const handleDeleteItem = async (itemId: string) => {
     // 임시 ID(temp_로 시작)는 서버에 저장되지 않은 항목이므로 로컬에서만 삭제
-    // if (itemId.startsWith('temp_')) {
-    //   const currentData = getCurrentData();
-    //   const updatedData = currentData.filter((item) => item.id !== itemId);
-    //   setCurrentData(updatedData);
-    //   return;
-    // }
+    if (itemId.startsWith('temp_')) {
+      const currentData = getCurrentData();
+      const updatedData = currentData.filter((item) => item.id !== itemId);
+      setCurrentData(updatedData);
+      return;
+    }
 
     // 서버에 저장된 항목은 API 호출하여 삭제
     try {
