@@ -211,12 +211,10 @@ const LoanManagement = () => {
     if (!deleteTargetId) return;
 
     try {
-      if (confirm("삭제 하시겠습니까?")) {
-        const response = await loanApi.deleteLoanProduct(deleteTargetId);
-        if (response.success) {
-          alert('대출상품이 삭제되었습니다');
-          loadProducts();
-        }
+      const response = await loanApi.deleteLoanProduct(deleteTargetId);
+      if (response.success) {
+        alert('대출상품이 삭제되었습니다');
+        loadProducts();
       }
     } catch (error) {
       console.error('대출상품 삭제 실패:', error);
