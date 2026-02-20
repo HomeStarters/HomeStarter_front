@@ -464,7 +464,8 @@ const CalculationResultDetail = () => {
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              ※ DSR 계산은 대출자산의 대출실행 금액 기준 원리금균등상환으로 가정하여 진행됩니다.
+              ※ DSR은 대출자산의 대출실행 금액 및 상환기간 기준 원리금균등상환으로 가정하여 진행됩니다.<br/>
+              ※ DTI/DSR은 프로필 수정 화면에서 입력된 원천징수소득 기준으로 계산됩니다.
             </Typography>
           </Box>
 
