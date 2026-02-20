@@ -19,6 +19,8 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -35,10 +37,12 @@ import {
   Logout as LogoutIcon,
   Notifications as NotificationsIcon,
   Close as CloseIcon,
+  AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useAuth } from '../hooks/useAuth';
 import { openSnackbar } from '../store/slices/uiSlice';
 import { notificationApi } from '../services/notification/notificationApi';
 import { householdApi } from '../services/household/householdApi';
@@ -51,7 +55,11 @@ const MainLayout = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // 프로필 메뉴 상태
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
 
   // 알림 상태
   const [unreadCount, setUnreadCount] = useState(0);
@@ -134,13 +142,15 @@ const MainLayout = () => {
     if (!notification.referenceId) return;
     setActionLoadingId(notification.id);
     try {
-      await householdApi.acceptInvite(notification.referenceId);
-      await notificationApi.markAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
-      );
-      loadUnreadCount();
-      dispatch(openSnackbar({ message: '가구원 초대를 수락했습니다', severity: 'success' }));
+      if (confirm("자산정보가 가구내 공유됩니다. 수락하시겠습니까?")) {
+        await householdApi.acceptInvite(notification.referenceId);
+        await notificationApi.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_ACCEPTED' as const } : n))
+        );
+        loadUnreadCount();
+        dispatch(openSnackbar({ message: '가구원 초대를 수락했습니다', severity: 'success' }));
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     } finally {
@@ -153,13 +163,15 @@ const MainLayout = () => {
     if (!notification.referenceId) return;
     setActionLoadingId(notification.id);
     try {
-      await householdApi.rejectInvite(notification.referenceId);
-      await notificationApi.markAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
-      );
-      loadUnreadCount();
-      dispatch(openSnackbar({ message: '가구원 초대를 거절했습니다', severity: 'info' }));
+      if (confirm("거절 하시겠습니까?")) {
+        await householdApi.rejectInvite(notification.referenceId);
+        await notificationApi.markAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, read: true, type: 'HOUSEHOLD_REJECTED' as const } : n))
+        );
+        loadUnreadCount();
+        dispatch(openSnackbar({ message: '가구원 초대를 거절했습니다', severity: 'info' }));
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     } finally {
@@ -229,9 +241,19 @@ const MainLayout = () => {
     navigate(-1);
   };
 
+  // 프로필 메뉴 열기/닫기
+  const handleOpenProfileMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseProfileMenu = () => {
+    setProfileMenuAnchor(null);
+  };
+
   // 로그아웃 핸들러
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    handleCloseProfileMenu();
+    await logout();
   };
 
   // 페이지 타이틀 결정
@@ -278,6 +300,27 @@ const MainLayout = () => {
               </Badge>
             </IconButton>
           )}
+
+          {/* 프로필 메뉴 아이콘 */}
+          <IconButton color="inherit" onClick={handleOpenProfileMenu}>
+            <AccountCircleIcon />
+          </IconButton>
+          <Menu
+            anchorEl={profileMenuAnchor}
+            open={Boolean(profileMenuAnchor)}
+            onClose={handleCloseProfileMenu}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <MenuItem onClick={() => { handleCloseProfileMenu(); navigate('/profile/basic-info'); }}>
+              <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+              <ListItemText>프로필 수정</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+              <ListItemText>로그아웃</ListItemText>
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

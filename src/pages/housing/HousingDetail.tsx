@@ -273,20 +273,22 @@ const HousingDetail = () => {
 
     try {
       setCalcLoading(true);
-      const requestData: CalculationRequest = {
-        housingId: id,
-        loanProductId: selectedLoanProductId,
-        loanAmount: parseInt(loanAmount.replace(/,/g, ''), 10),
-        loanTerm: parseInt(loanTerm, 10),
-        householdMemberIds: selectedMemberIds,
-      };
+      if (confirm("계산 하시겠습니까?")) {
+        const requestData: CalculationRequest = {
+          housingId: id,
+          loanProductId: selectedLoanProductId,
+          loanAmount: parseInt(loanAmount.replace(/,/g, ''), 10),
+          loanTerm: parseInt(loanTerm, 10),
+          householdMemberIds: selectedMemberIds,
+        };
 
-      const response = await calculatorApi.calculateHousingExpenses(requestData);
-      if (response) {
-        alert('계산이 완료되었습니다');
-        handleCloseCalcDialog();
-        // 계산결과 목록 조회 화면으로 이동
-        navigate(`/calculator/results`);
+        const response = await calculatorApi.calculateHousingExpenses(requestData);
+        if (response) {
+          alert('계산이 완료되었습니다');
+          handleCloseCalcDialog();
+          // 계산결과 목록 조회 화면으로 이동
+          navigate(`/calculator/results`);
+        }
       }
     } catch (error) {
       dispatch(

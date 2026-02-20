@@ -202,6 +202,11 @@ const CalculationResultDetail = () => {
               sx={{ fontWeight: 600 }}
             />
           </Box>
+          {result.housingPrice != null && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              분양가: {formatCurrency(result.housingPrice)}
+            </Typography>
+          )}
           {result.moveInDate && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               입주일: {new Date(result.moveInDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
@@ -462,7 +467,8 @@ const CalculationResultDetail = () => {
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              ※ DSR 계산은 대출자산의 대출실행 금액 기준 원리금균등상환으로 가정하여 진행됩니다.
+              ※ DSR은 대출자산의 대출실행 금액 및 상환기간 기준 원리금균등상환으로 가정하여 진행됩니다.<br/>
+              ※ DTI/DSR은 프로필 수정 화면에서 입력된 원천징수소득 기준으로 계산됩니다.
             </Typography>
           </Box>
 
