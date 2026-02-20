@@ -42,6 +42,7 @@ export interface CalculationResultResponse {
   userId: string;
   housingId: string;
   housingName: string;
+  housingPrice: number | null;
   moveInDate: string;
   loanProductId: string;
   loanProductName: string;

@@ -204,6 +204,11 @@ const CalculationResultDetail = () => {
               sx={{ fontWeight: 600 }}
             />
           </Box>
+          {result.housingPrice != null && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              분양가: {formatCurrency(result.housingPrice)}
+            </Typography>
+          )}
           {result.moveInDate && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               입주일: {new Date(result.moveInDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
