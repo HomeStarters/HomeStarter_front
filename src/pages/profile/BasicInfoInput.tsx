@@ -215,28 +215,30 @@ const BasicInfoInput = () => {
     setLoading(true);
 
     try {
-      const updateData: UserProfileUpdateRequest = {
-        birthDate: formData.birthDate,
-        gender: formData.gender as 'MALE' | 'FEMALE',
-        currentAddress: formData.currentAddress,
-        userWorkplaceAddress: formData.userWorkplaceAddress,
-        spouseWorkplaceAddress: formData.spouseWorkplaceAddress || undefined,
-        withholdingTaxSalary: formData.withholdingTaxSalary ? parseInt(formData.withholdingTaxSalary.replace(/,/g, ''), 10) : undefined,
-        investmentPropensity: formData.investmentPropensity as InvestmentPropensity,
-      };
+      if (confirm("수정 하시겠습니까?")) {
+        const updateData: UserProfileUpdateRequest = {
+          birthDate: formData.birthDate,
+          gender: formData.gender as 'MALE' | 'FEMALE',
+          currentAddress: formData.currentAddress,
+          userWorkplaceAddress: formData.userWorkplaceAddress,
+          spouseWorkplaceAddress: formData.spouseWorkplaceAddress || undefined,
+          withholdingTaxSalary: formData.withholdingTaxSalary ? parseInt(formData.withholdingTaxSalary.replace(/,/g, ''), 10) : undefined,
+          investmentPropensity: formData.investmentPropensity as InvestmentPropensity,
+        };
 
-      const response = await userApi.updateProfile(updateData);
+        const response = await userApi.updateProfile(updateData);
 
-      if (response.success) {
-        dispatch(
-          openSnackbar({
-            message: '기본정보가 저장되었습니다',
-            severity: 'success',
-          })
-        );
+        if (response.success) {
+          dispatch(
+            openSnackbar({
+              message: '기본정보가 저장되었습니다',
+              severity: 'success',
+            })
+          );
 
-        // 본인 자산정보 입력 화면으로 이동
-        navigate('/assets/self');
+          // 본인 자산정보 입력 화면으로 이동
+          navigate('/assets/self');
+        }
       }
     } catch (error) {
       dispatch(
@@ -271,11 +273,13 @@ const BasicInfoInput = () => {
 
     setInviteLoading(true);
     try {
-      const response = await householdApi.invite({ targetUserId: targetUserId.trim() });
-      if (response.success) {
-        dispatch(openSnackbar({ message: '가구원 초대가 요청되었습니다', severity: 'success' }));
-        handleCloseInviteSheet();
-        loadMembers();
+      if (confirm("동일 가구내 가구원간 자산정보는 공유됩니다. 초대 하시겠습니까?")) {
+        const response = await householdApi.invite({ targetUserId: targetUserId.trim() });
+        if (response.success) {
+          dispatch(openSnackbar({ message: '가구원 초대가 요청되었습니다', severity: 'success' }));
+          handleCloseInviteSheet();
+          loadMembers();
+        }
       }
     } catch (error) {
       // 에러는 client interceptor에서 처리
@@ -287,9 +291,11 @@ const BasicInfoInput = () => {
   // 가구원 삭제
   const handleDeleteMember = async (member: HouseholdMember) => {
     try {
-      await householdApi.deleteMember(member.userId);
-      dispatch(openSnackbar({ message: '가구원이 삭제되었습니다', severity: 'success' }));
-      loadMembers();
+      if (confirm("삭제 하시겠습니까?")) {
+        await householdApi.deleteMember(member.userId);
+        dispatch(openSnackbar({ message: '가구원이 삭제되었습니다', severity: 'success' }));
+        loadMembers();
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     }
@@ -298,9 +304,11 @@ const BasicInfoInput = () => {
   // OWNER 권한 위임
   const handleDelegateOwner = async (member: HouseholdMember) => {
     try {
-      await householdApi.delegateOwner(member.userId);
-      dispatch(openSnackbar({ message: `${member.name}님에게 소유자 권한을 위임했습니다`, severity: 'success' }));
-      loadMembers();
+      if (confirm("가구원 초대나 삭제 권한이 제한됩니다. 권한을 위임하시겠습니까?")) {
+        await householdApi.delegateOwner(member.userId);
+        dispatch(openSnackbar({ message: `${member.name}님에게 소유자 권한을 위임했습니다`, severity: 'success' }));
+        loadMembers();
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     }
@@ -313,9 +321,11 @@ const BasicInfoInput = () => {
     console.log("test");
 
     try {
-      await householdApi.deleteMember(myMemberId);
-      dispatch(openSnackbar({ message: '가구에서 탈퇴되었습니다', severity: 'success' }));
-      loadMembers();
+      if (confirm("탈퇴 하시겠습니까?")) {
+        await householdApi.deleteMember(myMemberId);
+        dispatch(openSnackbar({ message: '가구에서 탈퇴되었습니다', severity: 'success' }));
+        loadMembers();
+      }
     } catch (error) {
       // 에러는 client interceptor에서 처리
     }

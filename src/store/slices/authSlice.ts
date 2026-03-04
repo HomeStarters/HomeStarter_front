@@ -22,12 +22,16 @@ interface AuthState {
   error: string | null;
 }
 
-// 초기 상태
+// localStorage에서 토큰 복원
+const savedAccessToken = localStorage.getItem('accessToken');
+const savedRefreshToken = localStorage.getItem('refreshToken');
+
+// 초기 상태 - 저장된 토큰이 있으면 인증 상태로 시작
 const initialState: AuthState = {
-  isAuthenticated: false,
+  isAuthenticated: !!savedAccessToken,
   user: null,
-  accessToken: null,
-  refreshToken: null,
+  accessToken: savedAccessToken,
+  refreshToken: savedRefreshToken,
   loading: false,
   error: null,
 };

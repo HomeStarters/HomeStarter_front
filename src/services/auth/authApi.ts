@@ -67,4 +67,12 @@ export const authApi = {
     );
     return response.data;
   },
+
+  // 프로필 조회 (세션 복원용)
+  getProfile: async (): Promise<ApiResponse<LoginResponse['user']>> => {
+    const response = await userApiClient.get<ApiResponse<LoginResponse['user']>>(
+      API_ENDPOINTS.USER.PROFILE
+    );
+    return response.data;
+  },
 };

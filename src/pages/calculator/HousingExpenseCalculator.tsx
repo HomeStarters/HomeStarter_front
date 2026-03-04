@@ -158,49 +158,50 @@ const HousingExpenseCalculator = () => {
 
     try {
       setCalculating(true);
+      if (confirm("계산 하시겠습니까?")) {
+        const response = await calculatorApi.calculateHousingExpenses({
+          housingId: selectedHousingId,
+          loanProductId: selectedLoanId,
+          loanAmount: Number(loanAmount),
+          loanTerm: Number(loanTerm),
+          householdMemberIds: selectedMemberIds,
+        });
 
-      const response = await calculatorApi.calculateHousingExpenses({
-        housingId: selectedHousingId,
-        loanProductId: selectedLoanId,
-        loanAmount: Number(loanAmount),
-        loanTerm: Number(loanTerm),
-        householdMemberIds: selectedMemberIds,
-      });
+        if (response) {
+          const result = response;
+          const eligibleText = result.loanAnalysis.isEligible
+            ? '✅ 대출 기준을 충족합니다.'
+            : '❌ 대출 기준을 충족하지 못합니다.';
 
-      if (response) {
-        const result = response;
-        const eligibleText = result.loanAnalysis.isEligible
-          ? '✅ 대출 기준을 충족합니다.'
-          : '❌ 대출 기준을 충족하지 못합니다.';
+          const reasons = result.loanAnalysis.ineligibilityReasons?.length
+            ? `\n사유: ${result.loanAnalysis.ineligibilityReasons.join(', ')}`
+            : '';
 
-        const reasons = result.loanAnalysis.ineligibilityReasons?.length
-          ? `\n사유: ${result.loanAnalysis.ineligibilityReasons.join(', ')}`
-          : '';
+          alert(
+            `계산이 완료되었습니다.\n\n` +
+            `[재무 현황]\n` +
+            `- 예상자산: ${formatCurrency(result.financialStatus.estimatedAssets)}\n` +
+            `- 대출필요 금액: ${formatCurrency(result.financialStatus.loanRequired)}\n\n` +
+            `[대출 분석]\n` +
+            `- LTV: ${result.loanAnalysis.ltv.toFixed(1)}% / ${result.loanAnalysis.ltvLimit}%\n` +
+            `- DTI: ${result.loanAnalysis.dti.toFixed(1)}% / ${result.loanAnalysis.dtiLimit}%\n` +
+            `- DSR: ${result.loanAnalysis.dsr.toFixed(1)}% / ${result.loanAnalysis.dsrLimit}%\n` +
+            `- ${eligibleText}${reasons}\n\n` +
+            `[입주 후 예상]\n` +
+            `- 예상 자산: ${formatCurrency(result.afterMoveIn.assets)}\n` +
+            `- 예상 월지출: ${formatCurrency(result.afterMoveIn.monthlyExpenses)}\n` +
+            `- 월 여유자금: ${formatCurrency(result.afterMoveIn.monthlyAvailableFunds)}`
+          );
 
-        alert(
-          `계산이 완료되었습니다.\n\n` +
-          `[재무 현황]\n` +
-          `- 예상자산: ${formatCurrency(result.financialStatus.estimatedAssets)}\n` +
-          `- 대출필요 금액: ${formatCurrency(result.financialStatus.loanRequired)}\n\n` +
-          `[대출 분석]\n` +
-          `- LTV: ${result.loanAnalysis.ltv.toFixed(1)}% / ${result.loanAnalysis.ltvLimit}%\n` +
-          `- DTI: ${result.loanAnalysis.dti.toFixed(1)}% / ${result.loanAnalysis.dtiLimit}%\n` +
-          `- DSR: ${result.loanAnalysis.dsr.toFixed(1)}% / ${result.loanAnalysis.dsrLimit}%\n` +
-          `- ${eligibleText}${reasons}\n\n` +
-          `[입주 후 예상]\n` +
-          `- 예상 자산: ${formatCurrency(result.afterMoveIn.assets)}\n` +
-          `- 예상 월지출: ${formatCurrency(result.afterMoveIn.monthlyExpenses)}\n` +
-          `- 월 여유자금: ${formatCurrency(result.afterMoveIn.monthlyAvailableFunds)}`
-        );
-
-        navigate('/calculator/results');
-      } else {
-        dispatch(
-          openSnackbar({
-            message: response || '계산에 실패했습니다.',
-            severity: 'error',
-          })
-        );
+          navigate('/calculator/results');
+        } else {
+          dispatch(
+            openSnackbar({
+              message: response || '계산에 실패했습니다.',
+              severity: 'error',
+            })
+          );
+        }
       }
     } catch (error: any) {
       const errorMessage =
