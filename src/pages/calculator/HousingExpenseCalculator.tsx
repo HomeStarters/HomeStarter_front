@@ -16,6 +16,7 @@ import {
   InputAdornment,
   Chip,
   Checkbox,
+  FormControlLabel,
   List,
   ListItem,
   ListItemIcon,
@@ -71,6 +72,7 @@ const HousingExpenseCalculator = () => {
   const [selectedLoanId, setSelectedLoanId] = useState<string>('');
   const [loanAmount, setLoanAmount] = useState<string>('');
   const [loanTerm, setLoanTerm] = useState<string>('360');
+  const [useLoanRequiredAsLoanAmount, setUseLoanRequiredAsLoanAmount] = useState(false);
 
   // 선택된 대출상품 정보
   const selectedLoan = loanProducts.find((l) => String(l.id) === selectedLoanId);
@@ -149,8 +151,17 @@ const HousingExpenseCalculator = () => {
     setLoanTerm(e.target.value);
   };
 
+  // 대출필요금액으로 계산 체크 핸들러
+  const handleUseLoanRequiredToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseLoanRequiredAsLoanAmount(e.target.checked);
+    if (e.target.checked) {
+      setLoanAmount('');
+    }
+  };
+
   // 폼 유효성 검사
-  const isFormValid = selectedHousingId && selectedLoanId && loanAmount && Number(loanAmount) > 0 && loanTerm;
+  const isFormValid = selectedHousingId && selectedLoanId && loanTerm &&
+    (useLoanRequiredAsLoanAmount || (loanAmount && Number(loanAmount) > 0));
 
   // 계산 실행
   const handleCalculate = async () => {
@@ -159,13 +170,17 @@ const HousingExpenseCalculator = () => {
     try {
       setCalculating(true);
       if (confirm("계산 하시겠습니까?")) {
-        const response = await calculatorApi.calculateHousingExpenses({
+        const requestData: any = {
           housingId: selectedHousingId,
           loanProductId: selectedLoanId,
-          loanAmount: Number(loanAmount),
           loanTerm: Number(loanTerm),
           householdMemberIds: selectedMemberIds,
-        });
+          useLoanRequiredAsLoanAmount,
+        };
+        if (!useLoanRequiredAsLoanAmount && loanAmount) {
+          requestData.loanAmount = Number(loanAmount);
+        }
+        const response = await calculatorApi.calculateHousingExpenses(requestData);
 
         if (response) {
           const result = response;
@@ -360,21 +375,41 @@ const HousingExpenseCalculator = () => {
           </Paper>
         )}
 
+        {/* 대출필요금액으로 계산 체크박스 */}
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={useLoanRequiredAsLoanAmount}
+              onChange={handleUseLoanRequiredToggle}
+            />
+          }
+          label="대출필요 금액으로 계산"
+          sx={{ mb: 1 }}
+        />
+        {useLoanRequiredAsLoanAmount && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, ml: 4 }}>
+            예상자산 기준으로 산출된 대출필요금액이 대출금액으로 자동 적용됩니다
+          </Typography>
+        )}
+
         {/* 대출금액 입력 */}
         <TextField
           fullWidth
-          label="대출금액 (원) *"
+          label={useLoanRequiredAsLoanAmount ? '대출금액 (원)' : '대출금액 (원) *'}
           value={loanAmount ? Number(loanAmount).toLocaleString() : ''}
           onChange={handleLoanAmountChange}
-          placeholder="대출 희망 금액을 입력하세요"
+          placeholder={useLoanRequiredAsLoanAmount ? '대출필요금액으로 자동 산정됩니다' : '대출 희망 금액을 입력하세요'}
+          disabled={useLoanRequiredAsLoanAmount}
           sx={{ mb: 3 }}
           InputProps={{
             endAdornment: <InputAdornment position="end">원</InputAdornment>,
           }}
           helperText={
-            loanAmount && Number(loanAmount) > 0
-              ? formatCurrency(Number(loanAmount))
-              : ''
+            useLoanRequiredAsLoanAmount
+              ? ''
+              : loanAmount && Number(loanAmount) > 0
+                ? formatCurrency(Number(loanAmount))
+                : ''
           }
         />
 

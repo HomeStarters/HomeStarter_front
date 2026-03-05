@@ -87,9 +87,10 @@ export interface CalculationResultListParams {
 export interface CalculationRequest {
   housingId: string;
   loanProductId: string;
-  loanAmount: number;
+  loanAmount?: number;
   loanTerm: number;
   householdMemberIds: string[];
+  useLoanRequiredAsLoanAmount?: boolean;
 }
 
 // Calculator API 서비스
