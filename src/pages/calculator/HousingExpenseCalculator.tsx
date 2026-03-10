@@ -16,6 +16,7 @@ import {
   InputAdornment,
   Chip,
   Checkbox,
+  FormControlLabel,
   List,
   ListItem,
   ListItemIcon,
@@ -30,7 +31,8 @@ import { openSnackbar } from '../../store/slices/uiSlice';
 import Loading from '../../components/common/Loading';
 import { housingApi } from '../../services/housing/housingApi';
 import { loanApi } from '../../services/loan/loanApi';
-import { calculatorApi } from '../../services/calculator/calculatorApi';
+import { calculatorApi, REPAYMENT_TYPE_LABELS } from '../../services/calculator/calculatorApi';
+import type { RepaymentType } from '../../services/calculator/calculatorApi';
 import { householdApi } from '../../services/household/householdApi';
 import type { HousingListItem } from '../../services/housing/housingApi';
 import type { LoanProductDTO } from '../../services/loan/loanApi';
@@ -71,6 +73,9 @@ const HousingExpenseCalculator = () => {
   const [selectedLoanId, setSelectedLoanId] = useState<string>('');
   const [loanAmount, setLoanAmount] = useState<string>('');
   const [loanTerm, setLoanTerm] = useState<string>('360');
+  const [useLoanRequiredAsLoanAmount, setUseLoanRequiredAsLoanAmount] = useState(false);
+  const [repaymentType, setRepaymentType] = useState<RepaymentType>('EPI');
+  const [gracePeriod, setGracePeriod] = useState<string>('0');
 
   // 선택된 대출상품 정보
   const selectedLoan = loanProducts.find((l) => String(l.id) === selectedLoanId);
@@ -149,8 +154,28 @@ const HousingExpenseCalculator = () => {
     setLoanTerm(e.target.value);
   };
 
+  // 상환유형 변경 핸들러
+  const handleRepaymentTypeChange = (e: SelectChangeEvent<string>) => {
+    setRepaymentType(e.target.value as RepaymentType);
+  };
+
+  // 거치기간 변경 핸들러
+  const handleGracePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    setGracePeriod(value);
+  };
+
+  // 대출필요금액으로 계산 체크 핸들러
+  const handleUseLoanRequiredToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseLoanRequiredAsLoanAmount(e.target.checked);
+    if (e.target.checked) {
+      setLoanAmount('');
+    }
+  };
+
   // 폼 유효성 검사
-  const isFormValid = selectedHousingId && selectedLoanId && loanAmount && Number(loanAmount) > 0 && loanTerm;
+  const isFormValid = selectedHousingId && selectedLoanId && loanTerm &&
+    (useLoanRequiredAsLoanAmount || (loanAmount && Number(loanAmount) > 0));
 
   // 계산 실행
   const handleCalculate = async () => {
@@ -158,49 +183,56 @@ const HousingExpenseCalculator = () => {
 
     try {
       setCalculating(true);
+      if (confirm("계산 하시겠습니까?")) {
+        const requestData: any = {
+          housingId: selectedHousingId,
+          loanProductId: selectedLoanId,
+          loanTerm: Number(loanTerm),
+          householdMemberIds: selectedMemberIds,
+          useLoanRequiredAsLoanAmount,
+          repaymentType,
+          gracePeriod: Number(gracePeriod),
+        };
+        if (!useLoanRequiredAsLoanAmount && loanAmount) {
+          requestData.loanAmount = Number(loanAmount);
+        }
+        const response = await calculatorApi.calculateHousingExpenses(requestData);
 
-      const response = await calculatorApi.calculateHousingExpenses({
-        housingId: selectedHousingId,
-        loanProductId: selectedLoanId,
-        loanAmount: Number(loanAmount),
-        loanTerm: Number(loanTerm),
-        householdMemberIds: selectedMemberIds,
-      });
+        if (response) {
+          const result = response;
+          const eligibleText = result.loanAnalysis.isEligible
+            ? '✅ 대출 기준을 충족합니다.'
+            : '❌ 대출 기준을 충족하지 못합니다.';
 
-      if (response) {
-        const result = response;
-        const eligibleText = result.loanAnalysis.isEligible
-          ? '✅ 대출 기준을 충족합니다.'
-          : '❌ 대출 기준을 충족하지 못합니다.';
+          const reasons = result.loanAnalysis.ineligibilityReasons?.length
+            ? `\n사유: ${result.loanAnalysis.ineligibilityReasons.join(', ')}`
+            : '';
 
-        const reasons = result.loanAnalysis.ineligibilityReasons?.length
-          ? `\n사유: ${result.loanAnalysis.ineligibilityReasons.join(', ')}`
-          : '';
+          alert(
+            `계산이 완료되었습니다.\n\n` +
+            `[재무 현황]\n` +
+            `- 예상자산: ${formatCurrency(result.financialStatus.estimatedAssets)}\n` +
+            `- 대출필요 금액: ${formatCurrency(result.financialStatus.loanRequired)}\n\n` +
+            `[대출 분석]\n` +
+            `- LTV: ${result.loanAnalysis.ltv.toFixed(1)}% / ${result.loanAnalysis.ltvLimit}%\n` +
+            `- DTI: ${result.loanAnalysis.dti.toFixed(1)}% / ${result.loanAnalysis.dtiLimit}%\n` +
+            `- DSR: ${result.loanAnalysis.dsr.toFixed(1)}% / ${result.loanAnalysis.dsrLimit}%\n` +
+            `- ${eligibleText}${reasons}\n\n` +
+            `[입주 후 예상]\n` +
+            `- 예상 자산: ${formatCurrency(result.afterMoveIn.assets)}\n` +
+            `- 예상 월지출: ${formatCurrency(result.afterMoveIn.monthlyExpenses)}\n` +
+            `- 월 여유자금: ${formatCurrency(result.afterMoveIn.monthlyAvailableFunds)}`
+          );
 
-        alert(
-          `계산이 완료되었습니다.\n\n` +
-          `[재무 현황]\n` +
-          `- 예상자산: ${formatCurrency(result.financialStatus.estimatedAssets)}\n` +
-          `- 대출필요 금액: ${formatCurrency(result.financialStatus.loanRequired)}\n\n` +
-          `[대출 분석]\n` +
-          `- LTV: ${result.loanAnalysis.ltv.toFixed(1)}% / ${result.loanAnalysis.ltvLimit}%\n` +
-          `- DTI: ${result.loanAnalysis.dti.toFixed(1)}% / ${result.loanAnalysis.dtiLimit}%\n` +
-          `- DSR: ${result.loanAnalysis.dsr.toFixed(1)}% / ${result.loanAnalysis.dsrLimit}%\n` +
-          `- ${eligibleText}${reasons}\n\n` +
-          `[입주 후 예상]\n` +
-          `- 예상 자산: ${formatCurrency(result.afterMoveIn.assets)}\n` +
-          `- 예상 월지출: ${formatCurrency(result.afterMoveIn.monthlyExpenses)}\n` +
-          `- 월 여유자금: ${formatCurrency(result.afterMoveIn.monthlyAvailableFunds)}`
-        );
-
-        navigate('/calculator/results');
-      } else {
-        dispatch(
-          openSnackbar({
-            message: response || '계산에 실패했습니다.',
-            severity: 'error',
-          })
-        );
+          navigate('/calculator/results');
+        } else {
+          dispatch(
+            openSnackbar({
+              message: response || '계산에 실패했습니다.',
+              severity: 'error',
+            })
+          );
+        }
       }
     } catch (error: any) {
       const errorMessage =
@@ -359,21 +391,41 @@ const HousingExpenseCalculator = () => {
           </Paper>
         )}
 
+        {/* 대출필요금액으로 계산 체크박스 */}
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={useLoanRequiredAsLoanAmount}
+              onChange={handleUseLoanRequiredToggle}
+            />
+          }
+          label="대출필요 금액으로 계산"
+          sx={{ mb: 1 }}
+        />
+        {useLoanRequiredAsLoanAmount && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, ml: 4 }}>
+            예상자산 기준으로 산출된 대출필요금액이 대출금액으로 자동 적용됩니다
+          </Typography>
+        )}
+
         {/* 대출금액 입력 */}
         <TextField
           fullWidth
-          label="대출금액 (원) *"
+          label={useLoanRequiredAsLoanAmount ? '대출금액 (원)' : '대출금액 (원) *'}
           value={loanAmount ? Number(loanAmount).toLocaleString() : ''}
           onChange={handleLoanAmountChange}
-          placeholder="대출 희망 금액을 입력하세요"
+          placeholder={useLoanRequiredAsLoanAmount ? '대출필요금액으로 자동 산정됩니다' : '대출 희망 금액을 입력하세요'}
+          disabled={useLoanRequiredAsLoanAmount}
           sx={{ mb: 3 }}
           InputProps={{
             endAdornment: <InputAdornment position="end">원</InputAdornment>,
           }}
           helperText={
-            loanAmount && Number(loanAmount) > 0
-              ? formatCurrency(Number(loanAmount))
-              : ''
+            useLoanRequiredAsLoanAmount
+              ? ''
+              : loanAmount && Number(loanAmount) > 0
+                ? formatCurrency(Number(loanAmount))
+                : ''
           }
         />
 
@@ -394,6 +446,37 @@ const HousingExpenseCalculator = () => {
             <MenuItem value="420">35년 (420개월)</MenuItem>
           </Select>
         </FormControl>
+
+        {/* 상환유형 선택 */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel id="repayment-type-label">상환유형 *</InputLabel>
+          <Select
+            labelId="repayment-type-label"
+            value={repaymentType}
+            label="상환유형 *"
+            onChange={handleRepaymentTypeChange}
+          >
+            {(Object.keys(REPAYMENT_TYPE_LABELS) as RepaymentType[]).map((type) => (
+              <MenuItem key={type} value={type}>
+                {REPAYMENT_TYPE_LABELS[type]}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* 거치기간 입력 */}
+        <TextField
+          fullWidth
+          label="거치기간 (개월)"
+          value={gracePeriod}
+          onChange={handleGracePeriodChange}
+          placeholder="0"
+          sx={{ mb: 3 }}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">개월</InputAdornment>,
+          }}
+          helperText="원금 상환 없이 이자만 납부하는 기간 (0이면 거치기간 없음)"
+        />
 
         <Divider sx={{ my: 2 }} />
 

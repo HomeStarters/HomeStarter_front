@@ -42,6 +42,7 @@ export interface CalculationResultResponse {
   userId: string;
   housingId: string;
   housingName: string;
+  housingPrice: number | null;
   moveInDate: string;
   loanProductId: string;
   loanProductName: string;
@@ -82,13 +83,26 @@ export interface CalculationResultListParams {
   status?: string;
 }
 
+// 상환유형
+export type RepaymentType = 'EP' | 'EPI' | 'MDT' | 'GG';
+
+export const REPAYMENT_TYPE_LABELS: Record<RepaymentType, string> = {
+  EP: '원금균등',
+  EPI: '원리금균등',
+  MDT: '만기일시',
+  GG: '체증식',
+};
+
 // 계산 요청 타입
 export interface CalculationRequest {
   housingId: string;
   loanProductId: string;
-  loanAmount: number;
+  loanAmount?: number;
   loanTerm: number;
   householdMemberIds: string[];
+  useLoanRequiredAsLoanAmount?: boolean;
+  repaymentType: RepaymentType;
+  gracePeriod: number;
 }
 
 // Calculator API 서비스

@@ -53,6 +53,14 @@ const REPAYMENT_TYPE_LABELS: Record<string, string> = {
   GG: '체증식',
 };
 
+// 대출 유형 라벨
+const LOAN_TYPE_LABELS: Record<string, string> = {
+  MORTGAGE: '주택담보대출',
+  JEONSE: '전세대출',
+  CREDIT: '신용대출',
+  OTHER: '기타대출',
+};
+
 // 금액 포맷
 const formatCurrency = (amount: number): string => {
   return `${amount.toLocaleString('ko-KR')}원`;
@@ -146,6 +154,17 @@ const CategorySection = ({
                             variant="outlined"
                             sx={{ height: 20, fontSize: '0.65rem' }}
                           />
+                        )}
+                        {item.loanType && (
+                          <Chip
+                            label={LOAN_TYPE_LABELS[item.loanType] || item.loanType}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: '0.65rem' }}
+                          />
+                        )}
+                        {item.gracePeriod != null && (
+                          <Chip label={`거치 ${item.gracePeriod}개월`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
                         )}
                         {item.expirationDate && (
                           <Chip label={`만기 ${item.expirationDate}`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />

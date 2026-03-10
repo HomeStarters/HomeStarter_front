@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
   FormControlLabel,
+  FormHelperText,
   Checkbox,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -26,7 +27,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { openSnackbar } from '../../store/slices/uiSlice';
-import { assetApi, type AssetItem, type AssetUpdateRequest } from '../../services/asset/assetApi';
+import { assetApi, type AssetItem, type AssetUpdateRequest, type LoanType } from '../../services/asset/assetApi';
 
 // 탭 타입
 type TabType = 'assets' | 'loans' | 'monthlyIncome' | 'monthlyExpense';
@@ -53,6 +54,20 @@ const REPAYMENT_TYPE_OPTIONS = [
 // 상환 유형 라벨 변환
 const getRepaymentTypeLabel = (type: string): string => {
   const option = REPAYMENT_TYPE_OPTIONS.find((opt) => opt.value === type);
+  return option ? option.label : type;
+};
+
+// 대출 유형 옵션
+const LOAN_TYPE_OPTIONS = [
+  { value: 'MORTGAGE', label: '주택담보대출' },
+  { value: 'JEONSE', label: '전세대출' },
+  { value: 'CREDIT', label: '신용대출' },
+  { value: 'OTHER', label: '기타대출' },
+];
+
+// 대출 유형 라벨 변환
+const getLoanTypeLabel = (type: string): string => {
+  const option = LOAN_TYPE_OPTIONS.find((opt) => opt.value === type);
   return option ? option.label : type;
 };
 
@@ -96,6 +111,11 @@ const SelfAssetInput = () => {
   const [inputIsExcludingCalculation, setInputIsExcludingCalculation] = useState(false);
   const [inputExecutedAmount, setInputExecutedAmount] = useState('');
   const [inputRepaymentPeriod, setInputRepaymentPeriod] = useState('');
+  const [inputLoanType, setInputLoanType] = useState('');
+  const [inputGracePeriod, setInputGracePeriod] = useState('');
+
+  // 유효성 검증 에러 상태
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 기존 자산정보 로드 (GET /api/v1/assets)
   useEffect(() => {
@@ -185,6 +205,9 @@ const SelfAssetInput = () => {
     setInputIsExcludingCalculation(false);
     setInputExecutedAmount('');
     setInputRepaymentPeriod('');
+    setInputLoanType('');
+    setInputGracePeriod('');
+    setErrors({});
     setSheetOpen(true);
   };
 
@@ -200,6 +223,9 @@ const SelfAssetInput = () => {
     setInputIsExcludingCalculation(item.isExcludingCalculation || false);
     setInputExecutedAmount(item.executedAmount != null ? formatAmount(item.executedAmount) : '');
     setInputRepaymentPeriod(item.repaymentPeriod != null ? String(item.repaymentPeriod) : '');
+    setInputLoanType(item.loanType || '');
+    setInputGracePeriod(item.gracePeriod != null ? String(item.gracePeriod) : '');
+    setErrors({});
     setSheetOpen(true);
   };
 
@@ -215,11 +241,59 @@ const SelfAssetInput = () => {
     setInputIsExcludingCalculation(false);
     setInputExecutedAmount('');
     setInputRepaymentPeriod('');
+    setInputLoanType('');
+    setInputGracePeriod('');
+    setErrors({});
+  };
+
+  // 대출 탭 유효성 검증
+  const validateLoanFields = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!inputName.trim()) {
+      newErrors.name = '이름을 입력해주세요';
+    }
+    if (!inputAmount) {
+      newErrors.amount = '금액을 입력해주세요';
+    }
+    if (!inputInterestRate) {
+      newErrors.interestRate = '금리를 입력해주세요';
+    }
+    if (!inputRepaymentType) {
+      newErrors.repaymentType = '상환 유형을 선택해주세요';
+    }
+    if (!inputExecutedAmount) {
+      newErrors.executedAmount = '대출실행 금액을 입력해주세요';
+    }
+    if (!inputRepaymentPeriod) {
+      newErrors.repaymentPeriod = '상환기간을 입력해주세요';
+    }
+    if (!inputLoanType) {
+      newErrors.loanType = '대출유형을 선택해주세요';
+    }
+    if (!inputExpirationDate) {
+      newErrors.expirationDate = '만기일을 입력해주세요';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // 항목 저장 (추가/수정)
   const handleSaveItem = () => {
-    if (!inputName.trim() || !inputAmount) {
+    const isLoanTab = TAB_CONFIG[activeTab].key === 'loans';
+
+    if (isLoanTab) {
+      if (!validateLoanFields()) {
+        dispatch(
+          openSnackbar({
+            message: '모든 항목을 입력해주세요',
+            severity: 'warning',
+          })
+        );
+        return;
+      }
+    } else if (!inputName.trim() || !inputAmount) {
       dispatch(
         openSnackbar({
           message: '이름과 금액을 입력해주세요',
@@ -232,8 +306,6 @@ const SelfAssetInput = () => {
     const amount = parseAmount(inputAmount);
     const currentData = getCurrentData();
 
-    const isLoanTab = TAB_CONFIG[activeTab].key === 'loans';
-
     if (sheetMode === 'add') {
       // 새 항목 추가
       const newItem: AssetItem = {
@@ -242,11 +314,13 @@ const SelfAssetInput = () => {
         amount,
         ...(isLoanTab && {
           interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
+          loanType: (inputLoanType as LoanType) || undefined,
           repaymentType: inputRepaymentType || undefined,
           expirationDate: inputExpirationDate || undefined,
           isExcludingCalculation: inputIsExcludingCalculation,
           executedAmount: inputExecutedAmount ? parseAmount(inputExecutedAmount) : undefined,
           repaymentPeriod: inputRepaymentPeriod ? parseInt(inputRepaymentPeriod, 10) : undefined,
+          gracePeriod: inputGracePeriod ? parseInt(inputGracePeriod, 10) : undefined,
         }),
       };
       setCurrentData([...currentData, newItem]);
@@ -260,11 +334,13 @@ const SelfAssetInput = () => {
               amount,
               ...(isLoanTab && {
                 interestRate: inputInterestRate ? parseFloat(inputInterestRate) : undefined,
+                loanType: (inputLoanType as LoanType) || undefined,
                 repaymentType: inputRepaymentType || undefined,
                 expirationDate: inputExpirationDate || undefined,
                 isExcludingCalculation: inputIsExcludingCalculation,
                 executedAmount: inputExecutedAmount ? parseAmount(inputExecutedAmount) : undefined,
                 repaymentPeriod: inputRepaymentPeriod ? parseInt(inputRepaymentPeriod, 10) : undefined,
+                gracePeriod: inputGracePeriod ? parseInt(inputGracePeriod, 10) : undefined,
               }),
             }
           : item
@@ -278,29 +354,31 @@ const SelfAssetInput = () => {
   // 항목 삭제
   const handleDeleteItem = async (itemId: string) => {
     // 임시 ID(temp_로 시작)는 서버에 저장되지 않은 항목이므로 로컬에서만 삭제
-    // if (itemId.startsWith('temp_')) {
-    //   const currentData = getCurrentData();
-    //   const updatedData = currentData.filter((item) => item.id !== itemId);
-    //   setCurrentData(updatedData);
-    //   return;
-    // }
+    if (itemId.startsWith('temp_')) {
+      const currentData = getCurrentData();
+      const updatedData = currentData.filter((item) => item.id !== itemId);
+      setCurrentData(updatedData);
+      return;
+    }
 
     // 서버에 저장된 항목은 API 호출하여 삭제
     try {
-      const assetType = TAB_CONFIG[activeTab].key;
-      await assetApi.deleteAssetItem(assetType, itemId);
+      if (confirm("삭제 하시겠습니까?")) {
+        const assetType = TAB_CONFIG[activeTab].key;
+        await assetApi.deleteAssetItem(assetType, itemId);
 
-      // 성공하면 로컬 상태 업데이트
-    const currentData = getCurrentData();
-    const updatedData = currentData.filter((item) => item.id !== itemId);
-    setCurrentData(updatedData);
+        // 성공하면 로컬 상태 업데이트
+        const currentData = getCurrentData();
+        const updatedData = currentData.filter((item) => item.id !== itemId);
+        setCurrentData(updatedData);
 
-      dispatch(
-        openSnackbar({
-          message: '항목이 삭제되었습니다',
-          severity: 'success',
-        })
-      );
+        dispatch(
+          openSnackbar({
+            message: '항목이 삭제되었습니다',
+            severity: 'success',
+          })
+        );
+      }
     } catch (error) {
       console.error('항목 삭제 실패:', error);
       dispatch(
@@ -340,7 +418,9 @@ const SelfAssetInput = () => {
 
       if (assetId) {
         // 기존 자산정보가 있으면 수정 API 호출
-        response = await assetApi.updateAssets(assetId, requestData);
+        if (confirm("수정 하시겠습니까?")) {
+          response = await assetApi.updateAssets(assetId, requestData);
+        }
       } else {
         // 기존 자산정보가 없으면 직접 입력 API 호출
         if (!user?.userId) {
@@ -353,7 +433,9 @@ const SelfAssetInput = () => {
           setLoading(false);
           return;
         }
-        response = await assetApi.createAssetsByUserId(user.userId, 'SELF', requestData);
+        if (confirm("등록 하시겠습니까?")) {
+          response = await assetApi.createAssetsByUserId(user.userId, 'SELF', requestData);
+        }
       }
 
       if (response) {
@@ -364,8 +446,11 @@ const SelfAssetInput = () => {
           })
         );
 
-        // 배우자 자산정보 입력 화면으로 이동
-        navigate('/assets/spouse');
+        // // 배우자 자산정보 입력 화면으로 이동
+        // navigate('/assets/spouse');
+
+        // 대시보드로 이동
+        navigate('/dashboard');
       }
     } catch (error) {
       dispatch(
@@ -463,6 +548,11 @@ const SelfAssetInput = () => {
                               상환: {getRepaymentTypeLabel(item.repaymentType)}
                             </Typography>
                           )}
+                          {item.loanType && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              대출유형: {getLoanTypeLabel(item.loanType)}
+                            </Typography>
+                          )}
                           {item.executedAmount != null && (
                             <Typography variant="caption" color="text.secondary" display="block">
                               대출실행금액: {formatAmount(item.executedAmount)}원
@@ -471,6 +561,11 @@ const SelfAssetInput = () => {
                           {item.repaymentPeriod != null && (
                             <Typography variant="caption" color="text.secondary" display="block">
                               상환기간: {item.repaymentPeriod}개월
+                            </Typography>
+                          )}
+                          {item.gracePeriod != null && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              거치기간: {item.gracePeriod}개월
                             </Typography>
                           )}
                           {item.expirationDate && (
@@ -605,6 +700,8 @@ const SelfAssetInput = () => {
               placeholder={`예: ${currentConfig.key === 'assets' ? '예금, 주식, 부동산' : currentConfig.key === 'loans' ? '주택담보대출, 신용대출' : currentConfig.key === 'monthlyIncome' ? '급여, 부업' : '생활비, 보험료'}`}
               value={inputName}
               onChange={(e) => setInputName(e.target.value)}
+              error={!!errors.name}
+              helperText={errors.name}
               sx={{ mb: 2 }}
             />
             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
@@ -616,6 +713,8 @@ const SelfAssetInput = () => {
               value={inputAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               inputProps={{ inputMode: 'numeric' }}
+              error={!!errors.amount}
+              helperText={errors.amount}
               sx={{ mb: currentConfig.key === 'loans' ? 2 : 0 }}
             />
 
@@ -636,13 +735,15 @@ const SelfAssetInput = () => {
                     }
                   }}
                   inputProps={{ inputMode: 'decimal' }}
+                  error={!!errors.interestRate}
+                  helperText={errors.interestRate}
                   sx={{ mb: 2 }}
                 />
 
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
                   상환 유형
                 </Typography>
-                <FormControl fullWidth sx={{ mb: 2 }}>
+                <FormControl fullWidth sx={{ mb: 2 }} error={!!errors.repaymentType}>
                   <Select
                     value={inputRepaymentType}
                     onChange={(e) => setInputRepaymentType(e.target.value)}
@@ -657,6 +758,32 @@ const SelfAssetInput = () => {
                       </MenuItem>
                     ))}
                   </Select>
+                  {errors.repaymentType && (
+                    <FormHelperText>{errors.repaymentType}</FormHelperText>
+                  )}
+                </FormControl>
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  대출유형
+                </Typography>
+                <FormControl fullWidth sx={{ mb: 2 }} error={!!errors.loanType}>
+                  <Select
+                    value={inputLoanType}
+                    onChange={(e) => setInputLoanType(e.target.value)}
+                    displayEmpty
+                  >
+                    <MenuItem value="" disabled>
+                      대출유형 선택
+                    </MenuItem>
+                    {LOAN_TYPE_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.loanType && (
+                    <FormHelperText>{errors.loanType}</FormHelperText>
+                  )}
                 </FormControl>
 
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
@@ -675,6 +802,8 @@ const SelfAssetInput = () => {
                     }
                   }}
                   inputProps={{ inputMode: 'numeric' }}
+                  error={!!errors.executedAmount}
+                  helperText={errors.executedAmount}
                   sx={{ mb: 2 }}
                 />
 
@@ -692,6 +821,25 @@ const SelfAssetInput = () => {
                     }
                   }}
                   inputProps={{ inputMode: 'numeric' }}
+                  error={!!errors.repaymentPeriod}
+                  helperText={errors.repaymentPeriod}
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  거치기간 (개월)
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="예: 12"
+                  value={inputGracePeriod}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^\d*$/.test(val)) {
+                      setInputGracePeriod(val);
+                    }
+                  }}
+                  inputProps={{ inputMode: 'numeric' }}
                   sx={{ mb: 2 }}
                 />
 
@@ -704,6 +852,8 @@ const SelfAssetInput = () => {
                   value={inputExpirationDate}
                   onChange={(e) => setInputExpirationDate(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  error={!!errors.expirationDate}
+                  helperText={errors.expirationDate}
                   sx={{ mb: 2 }}
                 />
 

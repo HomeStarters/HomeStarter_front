@@ -360,59 +360,63 @@ const HousingInput = () => {
     try {
       if (isEditMode && editId) {
         // 수정 모드
-        const requestData: HousingUpdateRequest = {
-          housingName: basicForm.housingName.trim(),
-          housingType: basicForm.housingType as HousingType,
-          price: parseAmount(basicForm.price),
-          moveInDate: basicForm.moveInDate,
-          completionDate: basicForm.completionDate,
-          address: basicForm.address.trim(),
-          regionCode: basicForm.regionCode || undefined,
-          complexInfo: {
-            houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
-            totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
-            totalDong: detailForm.complexCount ? parseInt(detailForm.complexCount, 10) : undefined,
-          },
-          livingEnvironment: {
-            sunlightLevel: detailForm.sunlightLevel || undefined,
-            noiseLevel: detailForm.noiseLevel || undefined,
-          },
-          transportations: detailForm.transportations.length > 0 ? detailForm.transportations : undefined,
-        };
+        if (confirm("수정 하시겠습니까?")) {
+          const requestData: HousingUpdateRequest = {
+            housingName: basicForm.housingName.trim(),
+            housingType: basicForm.housingType as HousingType,
+            price: parseAmount(basicForm.price),
+            moveInDate: basicForm.moveInDate,
+            completionDate: basicForm.completionDate,
+            address: basicForm.address.trim(),
+            regionCode: basicForm.regionCode || undefined,
+            complexInfo: {
+              houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
+              totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
+              totalDong: detailForm.complexCount ? parseInt(detailForm.complexCount, 10) : undefined,
+            },
+            livingEnvironment: {
+              sunlightLevel: detailForm.sunlightLevel || undefined,
+              noiseLevel: detailForm.noiseLevel || undefined,
+            },
+            transportations: detailForm.transportations.length > 0 ? detailForm.transportations : undefined,
+          };
 
-        const response = await housingApi.updateHousing(Number(editId), requestData);
+          const response = await housingApi.updateHousing(Number(editId), requestData);
 
-        if (response.success) {
-          alert('주택정보가 수정되었습니다');
-          navigate(`/housings/${editId}`);
+          if (response.success) {
+            alert('주택정보가 수정되었습니다');
+            navigate(`/housings/${editId}`);
+          }
         }
       } else {
         // 생성 모드
-        const requestData: HousingCreateRequest = {
-          housingName: basicForm.housingName.trim(),
-          housingType: basicForm.housingType as HousingType,
-          price: parseAmount(basicForm.price),
-          moveInDate: basicForm.moveInDate,
-          completionDate: basicForm.completionDate,
-          address: basicForm.address.trim(),
-          regionCode: basicForm.regionCode || undefined,
-          complexInfo: {
-            houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
-            totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
-            totalDong: detailForm.complexCount ? parseInt(detailForm.complexCount, 10) : undefined,
-          },
-          livingEnvironment: {
-            sunlightLevel: detailForm.sunlightLevel || undefined,
-            noiseLevel: detailForm.noiseLevel || undefined,
-          },
-          transportations: detailForm.transportations.length > 0 ? detailForm.transportations : undefined,
-        };
+        if (confirm("생성 하시겠습니까?")) {
+          const requestData: HousingCreateRequest = {
+            housingName: basicForm.housingName.trim(),
+            housingType: basicForm.housingType as HousingType,
+            price: parseAmount(basicForm.price),
+            moveInDate: basicForm.moveInDate,
+            completionDate: basicForm.completionDate,
+            address: basicForm.address.trim(),
+            regionCode: basicForm.regionCode || undefined,
+            complexInfo: {
+              houseArea: basicForm.houseArea ? parseFloat(basicForm.houseArea) : undefined,
+              totalHouseholds: detailForm.totalHouseholds ? parseInt(detailForm.totalHouseholds, 10) : undefined,
+              totalDong: detailForm.complexCount ? parseInt(detailForm.complexCount, 10) : undefined,
+            },
+            livingEnvironment: {
+              sunlightLevel: detailForm.sunlightLevel || undefined,
+              noiseLevel: detailForm.noiseLevel || undefined,
+            },
+            transportations: detailForm.transportations.length > 0 ? detailForm.transportations : undefined,
+          };
 
-        const response = await housingApi.createHousing(requestData);
+          const response = await housingApi.createHousing(requestData);
 
-        if (response.success) {
-          alert('주택정보가 저장되었습니다');
-          navigate('/dashboard');
+          if (response.success) {
+            alert('주택정보가 저장되었습니다');
+            navigate('/dashboard');
+          }
         }
       }
     } catch (error) {

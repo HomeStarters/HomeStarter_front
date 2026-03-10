@@ -55,7 +55,7 @@ import {
   type NoiseLevel,
   REGION_CODE_LABELS,
 } from '../../services/housing/housingApi';
-import { calculatorApi, type CalculationRequest } from '../../services/calculator/calculatorApi';
+import { calculatorApi, REPAYMENT_TYPE_LABELS, type CalculationRequest, type RepaymentType } from '../../services/calculator/calculatorApi';
 import { loanApi, type LoanProduct } from '../../services/loan/loanApi';
 import { householdApi } from '../../services/household/householdApi';
 import type { HouseholdMember } from '../../types/household.types';
@@ -120,6 +120,9 @@ const HousingDetail = () => {
   // 가구원 관련 상태
   const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [useLoanRequiredAsLoanAmount, setUseLoanRequiredAsLoanAmount] = useState(false);
+  const [repaymentType, setRepaymentType] = useState<RepaymentType>('EPI');
+  const [gracePeriod, setGracePeriod] = useState<string>('0');
 
   // 주택 상세 정보 로드
   const loadHousingDetail = useCallback(async () => {
@@ -257,11 +260,14 @@ const HousingDetail = () => {
     setLoanAmount('');
     setLoanTerm('360');
     setSelectedMemberIds([]);
+    setUseLoanRequiredAsLoanAmount(false);
+    setRepaymentType('EPI');
+    setGracePeriod('0');
   };
 
   // 계산하기 실행
   const handleCalculate = async () => {
-    if (!id || !selectedLoanProductId || !loanAmount || !loanTerm) {
+    if (!id || !selectedLoanProductId || !loanTerm) {
       dispatch(
         openSnackbar({
           message: '모든 필수 항목을 입력해주세요',
@@ -271,22 +277,39 @@ const HousingDetail = () => {
       return;
     }
 
+    if (!useLoanRequiredAsLoanAmount && !loanAmount) {
+      dispatch(
+        openSnackbar({
+          message: '대출금액을 입력하거나 "대출필요 금액으로 계산"을 선택해주세요',
+          severity: 'warning',
+        })
+      );
+      return;
+    }
+
     try {
       setCalcLoading(true);
-      const requestData: CalculationRequest = {
-        housingId: id,
-        loanProductId: selectedLoanProductId,
-        loanAmount: parseInt(loanAmount.replace(/,/g, ''), 10),
-        loanTerm: parseInt(loanTerm, 10),
-        householdMemberIds: selectedMemberIds,
-      };
+      if (confirm("계산 하시겠습니까?")) {
+        const requestData: CalculationRequest = {
+          housingId: id,
+          loanProductId: selectedLoanProductId,
+          loanTerm: parseInt(loanTerm, 10),
+          householdMemberIds: selectedMemberIds,
+          useLoanRequiredAsLoanAmount,
+          repaymentType,
+          gracePeriod: parseInt(gracePeriod, 10),
+        };
+        if (!useLoanRequiredAsLoanAmount && loanAmount) {
+          requestData.loanAmount = parseInt(loanAmount.replace(/,/g, ''), 10);
+        }
 
-      const response = await calculatorApi.calculateHousingExpenses(requestData);
-      if (response) {
-        alert('계산이 완료되었습니다');
-        handleCloseCalcDialog();
-        // 계산결과 목록 조회 화면으로 이동
-        navigate(`/calculator/results`);
+        const response = await calculatorApi.calculateHousingExpenses(requestData);
+        if (response) {
+          alert('계산이 완료되었습니다');
+          handleCloseCalcDialog();
+          // 계산결과 목록 조회 화면으로 이동
+          navigate(`/calculator/results`);
+        }
       }
     } catch (error) {
       dispatch(
@@ -699,13 +722,36 @@ const HousingDetail = () => {
             </Select>
           </FormControl>
 
+          {/* 대출필요금액으로 계산 체크박스 */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={useLoanRequiredAsLoanAmount}
+                onChange={(e) => {
+                  setUseLoanRequiredAsLoanAmount(e.target.checked);
+                  if (e.target.checked) {
+                    setLoanAmount('');
+                  }
+                }}
+              />
+            }
+            label="대출필요 금액으로 계산"
+            sx={{ mb: 1 }}
+          />
+          {useLoanRequiredAsLoanAmount && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, ml: 4 }}>
+              예상자산 기준으로 산출된 대출필요금액이 대출금액으로 자동 적용됩니다
+            </Typography>
+          )}
+
           {/* 대출금액 */}
           <TextField
             fullWidth
-            label="대출금액 *"
-            placeholder="0"
+            label={useLoanRequiredAsLoanAmount ? '대출금액' : '대출금액 *'}
+            placeholder={useLoanRequiredAsLoanAmount ? '대출필요금액으로 자동 산정됩니다' : '0'}
             value={loanAmount}
             onChange={(e) => handleLoanAmountChange(e.target.value)}
+            disabled={useLoanRequiredAsLoanAmount}
             InputProps={{
               endAdornment: <Typography color="text.secondary">원</Typography>,
             }}
@@ -714,7 +760,7 @@ const HousingDetail = () => {
           />
 
           {/* 대출기간 */}
-          <FormControl fullWidth>
+          <FormControl fullWidth sx={{ mb: 3 }}>
             <InputLabel>대출기간 *</InputLabel>
             <Select
               value={loanTerm}
@@ -729,6 +775,36 @@ const HousingDetail = () => {
               <MenuItem value="420">35년 (420개월)</MenuItem>
             </Select>
           </FormControl>
+
+          {/* 상환유형 선택 */}
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>상환유형 *</InputLabel>
+            <Select
+              value={repaymentType}
+              label="상환유형 *"
+              onChange={(e) => setRepaymentType(e.target.value as RepaymentType)}
+            >
+              {(Object.keys(REPAYMENT_TYPE_LABELS) as RepaymentType[]).map((type) => (
+                <MenuItem key={type} value={type}>
+                  {REPAYMENT_TYPE_LABELS[type]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* 거치기간 입력 */}
+          <TextField
+            fullWidth
+            label="거치기간 (개월)"
+            value={gracePeriod}
+            onChange={(e) => setGracePeriod(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="0"
+            InputProps={{
+              endAdornment: <Typography color="text.secondary">개월</Typography>,
+            }}
+            inputProps={{ inputMode: 'numeric' }}
+            helperText="원금 상환 없이 이자만 납부하는 기간 (0이면 거치기간 없음)"
+          />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={handleCloseCalcDialog} disabled={calcLoading}>
@@ -737,7 +813,7 @@ const HousingDetail = () => {
           <Button
             variant="contained"
             onClick={handleCalculate}
-            disabled={calcLoading || !selectedLoanProductId || !loanAmount}
+            disabled={calcLoading || !selectedLoanProductId || (!useLoanRequiredAsLoanAmount && !loanAmount)}
             startIcon={calcLoading ? <CircularProgress size={20} /> : <CalculateIcon />}
           >
             계산하기
