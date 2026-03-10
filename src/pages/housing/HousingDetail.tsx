@@ -55,7 +55,7 @@ import {
   type NoiseLevel,
   REGION_CODE_LABELS,
 } from '../../services/housing/housingApi';
-import { calculatorApi, type CalculationRequest } from '../../services/calculator/calculatorApi';
+import { calculatorApi, REPAYMENT_TYPE_LABELS, type CalculationRequest, type RepaymentType } from '../../services/calculator/calculatorApi';
 import { loanApi, type LoanProduct } from '../../services/loan/loanApi';
 import { householdApi } from '../../services/household/householdApi';
 import type { HouseholdMember } from '../../types/household.types';
@@ -121,6 +121,8 @@ const HousingDetail = () => {
   const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [useLoanRequiredAsLoanAmount, setUseLoanRequiredAsLoanAmount] = useState(false);
+  const [repaymentType, setRepaymentType] = useState<RepaymentType>('EPI');
+  const [gracePeriod, setGracePeriod] = useState<string>('0');
 
   // 주택 상세 정보 로드
   const loadHousingDetail = useCallback(async () => {
@@ -259,6 +261,8 @@ const HousingDetail = () => {
     setLoanTerm('360');
     setSelectedMemberIds([]);
     setUseLoanRequiredAsLoanAmount(false);
+    setRepaymentType('EPI');
+    setGracePeriod('0');
   };
 
   // 계산하기 실행
@@ -292,6 +296,8 @@ const HousingDetail = () => {
           loanTerm: parseInt(loanTerm, 10),
           householdMemberIds: selectedMemberIds,
           useLoanRequiredAsLoanAmount,
+          repaymentType,
+          gracePeriod: parseInt(gracePeriod, 10),
         };
         if (!useLoanRequiredAsLoanAmount && loanAmount) {
           requestData.loanAmount = parseInt(loanAmount.replace(/,/g, ''), 10);
@@ -754,7 +760,7 @@ const HousingDetail = () => {
           />
 
           {/* 대출기간 */}
-          <FormControl fullWidth>
+          <FormControl fullWidth sx={{ mb: 3 }}>
             <InputLabel>대출기간 *</InputLabel>
             <Select
               value={loanTerm}
@@ -769,6 +775,36 @@ const HousingDetail = () => {
               <MenuItem value="420">35년 (420개월)</MenuItem>
             </Select>
           </FormControl>
+
+          {/* 상환유형 선택 */}
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>상환유형 *</InputLabel>
+            <Select
+              value={repaymentType}
+              label="상환유형 *"
+              onChange={(e) => setRepaymentType(e.target.value as RepaymentType)}
+            >
+              {(Object.keys(REPAYMENT_TYPE_LABELS) as RepaymentType[]).map((type) => (
+                <MenuItem key={type} value={type}>
+                  {REPAYMENT_TYPE_LABELS[type]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* 거치기간 입력 */}
+          <TextField
+            fullWidth
+            label="거치기간 (개월)"
+            value={gracePeriod}
+            onChange={(e) => setGracePeriod(e.target.value.replace(/[^0-9]/g, ''))}
+            placeholder="0"
+            InputProps={{
+              endAdornment: <Typography color="text.secondary">개월</Typography>,
+            }}
+            inputProps={{ inputMode: 'numeric' }}
+            helperText="원금 상환 없이 이자만 납부하는 기간 (0이면 거치기간 없음)"
+          />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={handleCloseCalcDialog} disabled={calcLoading}>

@@ -2,6 +2,9 @@ import { assetApiClient } from '../api/client';
 import { API_ENDPOINTS } from '../../config/api.config';
 import type { ApiResponse } from '../../types/api';
 
+// 대출 유형
+export type LoanType = 'MORTGAGE' | 'JEONSE' | 'CREDIT' | 'OTHER';
+
 // 자산 항목 타입
 export interface AssetItem {
   id: string;
@@ -9,11 +12,13 @@ export interface AssetItem {
   amount: number;
   category?: string;
   interestRate?: number;
+  loanType?: LoanType;
   repaymentType?: string;
   expirationDate?: string;
   isExcludingCalculation?: boolean;
   executedAmount?: number;
   repaymentPeriod?: number;
+  gracePeriod?: number;
 }
 
 // 자산 정보 타입 (개별 사용자)

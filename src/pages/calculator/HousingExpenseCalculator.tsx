@@ -31,7 +31,8 @@ import { openSnackbar } from '../../store/slices/uiSlice';
 import Loading from '../../components/common/Loading';
 import { housingApi } from '../../services/housing/housingApi';
 import { loanApi } from '../../services/loan/loanApi';
-import { calculatorApi } from '../../services/calculator/calculatorApi';
+import { calculatorApi, REPAYMENT_TYPE_LABELS } from '../../services/calculator/calculatorApi';
+import type { RepaymentType } from '../../services/calculator/calculatorApi';
 import { householdApi } from '../../services/household/householdApi';
 import type { HousingListItem } from '../../services/housing/housingApi';
 import type { LoanProductDTO } from '../../services/loan/loanApi';
@@ -73,6 +74,8 @@ const HousingExpenseCalculator = () => {
   const [loanAmount, setLoanAmount] = useState<string>('');
   const [loanTerm, setLoanTerm] = useState<string>('360');
   const [useLoanRequiredAsLoanAmount, setUseLoanRequiredAsLoanAmount] = useState(false);
+  const [repaymentType, setRepaymentType] = useState<RepaymentType>('EPI');
+  const [gracePeriod, setGracePeriod] = useState<string>('0');
 
   // 선택된 대출상품 정보
   const selectedLoan = loanProducts.find((l) => String(l.id) === selectedLoanId);
@@ -151,6 +154,17 @@ const HousingExpenseCalculator = () => {
     setLoanTerm(e.target.value);
   };
 
+  // 상환유형 변경 핸들러
+  const handleRepaymentTypeChange = (e: SelectChangeEvent<string>) => {
+    setRepaymentType(e.target.value as RepaymentType);
+  };
+
+  // 거치기간 변경 핸들러
+  const handleGracePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    setGracePeriod(value);
+  };
+
   // 대출필요금액으로 계산 체크 핸들러
   const handleUseLoanRequiredToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUseLoanRequiredAsLoanAmount(e.target.checked);
@@ -176,6 +190,8 @@ const HousingExpenseCalculator = () => {
           loanTerm: Number(loanTerm),
           householdMemberIds: selectedMemberIds,
           useLoanRequiredAsLoanAmount,
+          repaymentType,
+          gracePeriod: Number(gracePeriod),
         };
         if (!useLoanRequiredAsLoanAmount && loanAmount) {
           requestData.loanAmount = Number(loanAmount);
@@ -430,6 +446,37 @@ const HousingExpenseCalculator = () => {
             <MenuItem value="420">35년 (420개월)</MenuItem>
           </Select>
         </FormControl>
+
+        {/* 상환유형 선택 */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel id="repayment-type-label">상환유형 *</InputLabel>
+          <Select
+            labelId="repayment-type-label"
+            value={repaymentType}
+            label="상환유형 *"
+            onChange={handleRepaymentTypeChange}
+          >
+            {(Object.keys(REPAYMENT_TYPE_LABELS) as RepaymentType[]).map((type) => (
+              <MenuItem key={type} value={type}>
+                {REPAYMENT_TYPE_LABELS[type]}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* 거치기간 입력 */}
+        <TextField
+          fullWidth
+          label="거치기간 (개월)"
+          value={gracePeriod}
+          onChange={handleGracePeriodChange}
+          placeholder="0"
+          sx={{ mb: 3 }}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">개월</InputAdornment>,
+          }}
+          helperText="원금 상환 없이 이자만 납부하는 기간 (0이면 거치기간 없음)"
+        />
 
         <Divider sx={{ my: 2 }} />
 
