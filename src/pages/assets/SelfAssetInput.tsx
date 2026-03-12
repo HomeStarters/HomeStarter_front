@@ -19,11 +19,20 @@ import {
   FormControlLabel,
   FormHelperText,
   Checkbox,
+  Switch,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import LinkIcon from '@mui/icons-material/Link';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { openSnackbar } from '../../store/slices/uiSlice';
@@ -99,6 +108,13 @@ const SelfAssetInput = () => {
   const [monthlyIncome, setMonthlyIncome] = useState<AssetItem[]>([]);
   const [monthlyExpense, setMonthlyExpense] = useState<AssetItem[]>([]);
 
+  // 월지출 자동 등록 토글
+  const [autoRegisterExpense, setAutoRegisterExpense] = useState(true);
+
+  // 월지출 등록 Confirm 다이얼로그
+  const [showExpenseConfirm, setShowExpenseConfirm] = useState(false);
+  const [expenseRegisterLoading, setExpenseRegisterLoading] = useState(false);
+
   // 바텀시트 상태
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<SheetMode>('add');
@@ -117,69 +133,73 @@ const SelfAssetInput = () => {
   // 유효성 검증 에러 상태
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 기존 자산정보 로드 (GET /api/v1/assets)
-  useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        const response = await assetApi.getAssets();
-        console.log(response);
-        if (response && response.assets) {
-          // assets 배열에서 ownerType이 'SELF'인 데이터 찾기
-          const selfData = response.assets.find(
-            (asset: { ownerType?: string }) => asset.ownerType === 'SELF'
-          );
-          if (selfData) {
-            // Asset ID 저장
-            if (selfData.assetId) {
-              setAssetId(selfData.assetId);
-            }
-            setAssets(selfData.assets || []);
-            setLoans(selfData.loans || []);
-            setMonthlyIncome(selfData.monthlyIncomes || []);
-            setMonthlyExpense(selfData.monthlyExpenses || []);
-          }
+  // 자산정보 로드 (공통 함수)
+  const loadAssetsData = async () => {
+    try {
+      const response = await assetApi.getAssets();
+      console.log(response);
+      if (response?.assets) {
+        const selfData = response.assets.find(
+          (asset: { ownerType?: string }) => asset.ownerType === 'SELF'
+        );
+        if (selfData) {
+          if (selfData.assetId) setAssetId(selfData.assetId);
+          const loadedLoans = selfData.loans || [];
+          const loadedExpenses = selfData.monthlyExpenses || [];
+          setAssets(selfData.assets || []);
+          setLoans(loadedLoans);
+          setMonthlyIncome(selfData.monthlyIncomes || []);
+          setMonthlyExpense(loadedExpenses);
+          return { loans: loadedLoans, monthlyExpenses: loadedExpenses };
         }
-      } catch (error) {
-        console.error('자산정보 로드 실패:', error);
-      } finally {
-        setInitialLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('자산정보 로드 실패:', error);
+    }
+    return null;
+  };
 
-    loadAssets();
+  // 초기 로드
+  useEffect(() => {
+    loadAssetsData().finally(() => setInitialLoading(false));
   }, []);
+
+  // 특정 대출에 연결된 월지출 항목 조회
+  const getLoanLinkedExpense = (loanId: string): AssetItem | undefined => {
+    return monthlyExpense.find((e) => e.loanItemId === loanId);
+  };
+
+  // 서버에 저장된 대출 중 월지출이 없는 항목 목록
+  const getLoansWithoutLinkedExpense = (
+    currentLoans: AssetItem[],
+    currentExpenses: AssetItem[]
+  ): AssetItem[] => {
+    const linkedLoanIds = currentExpenses
+      .filter((e) => e.loanItemId)
+      .map((e) => e.loanItemId!);
+    return currentLoans.filter(
+      (loan) => !loan.id.startsWith('temp_') && !linkedLoanIds.includes(loan.id)
+    );
+  };
 
   // 현재 탭의 데이터 가져오기
   const getCurrentData = (): AssetItem[] => {
     switch (TAB_CONFIG[activeTab].key) {
-      case 'assets':
-        return assets;
-      case 'loans':
-        return loans;
-      case 'monthlyIncome':
-        return monthlyIncome;
-      case 'monthlyExpense':
-        return monthlyExpense;
-      default:
-        return [];
+      case 'assets': return assets;
+      case 'loans': return loans;
+      case 'monthlyIncome': return monthlyIncome;
+      case 'monthlyExpense': return monthlyExpense;
+      default: return [];
     }
   };
 
   // 현재 탭의 데이터 설정하기
   const setCurrentData = (data: AssetItem[]) => {
     switch (TAB_CONFIG[activeTab].key) {
-      case 'assets':
-        setAssets(data);
-        break;
-      case 'loans':
-        setLoans(data);
-        break;
-      case 'monthlyIncome':
-        setMonthlyIncome(data);
-        break;
-      case 'monthlyExpense':
-        setMonthlyExpense(data);
-        break;
+      case 'assets': setAssets(data); break;
+      case 'loans': setLoans(data); break;
+      case 'monthlyIncome': setMonthlyIncome(data); break;
+      case 'monthlyExpense': setMonthlyExpense(data); break;
     }
   };
 
@@ -249,32 +269,14 @@ const SelfAssetInput = () => {
   // 대출 탭 유효성 검증
   const validateLoanFields = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!inputName.trim()) {
-      newErrors.name = '이름을 입력해주세요';
-    }
-    if (!inputAmount) {
-      newErrors.amount = '금액을 입력해주세요';
-    }
-    if (!inputInterestRate) {
-      newErrors.interestRate = '금리를 입력해주세요';
-    }
-    if (!inputRepaymentType) {
-      newErrors.repaymentType = '상환 유형을 선택해주세요';
-    }
-    if (!inputExecutedAmount) {
-      newErrors.executedAmount = '대출실행 금액을 입력해주세요';
-    }
-    if (!inputRepaymentPeriod) {
-      newErrors.repaymentPeriod = '상환기간을 입력해주세요';
-    }
-    if (!inputLoanType) {
-      newErrors.loanType = '대출유형을 선택해주세요';
-    }
-    if (!inputExpirationDate) {
-      newErrors.expirationDate = '만기일을 입력해주세요';
-    }
-
+    if (!inputName.trim()) newErrors.name = '이름을 입력해주세요';
+    if (!inputAmount) newErrors.amount = '금액을 입력해주세요';
+    if (!inputInterestRate) newErrors.interestRate = '금리를 입력해주세요';
+    if (!inputRepaymentType) newErrors.repaymentType = '상환 유형을 선택해주세요';
+    if (!inputExecutedAmount) newErrors.executedAmount = '대출실행 금액을 입력해주세요';
+    if (!inputRepaymentPeriod) newErrors.repaymentPeriod = '상환기간을 입력해주세요';
+    if (!inputLoanType) newErrors.loanType = '대출유형을 선택해주세요';
+    if (!inputExpirationDate) newErrors.expirationDate = '만기일을 입력해주세요';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -285,21 +287,11 @@ const SelfAssetInput = () => {
 
     if (isLoanTab) {
       if (!validateLoanFields()) {
-        dispatch(
-          openSnackbar({
-            message: '모든 항목을 입력해주세요',
-            severity: 'warning',
-          })
-        );
+        dispatch(openSnackbar({ message: '모든 항목을 입력해주세요', severity: 'warning' }));
         return;
       }
     } else if (!inputName.trim() || !inputAmount) {
-      dispatch(
-        openSnackbar({
-          message: '이름과 금액을 입력해주세요',
-          severity: 'warning',
-        })
-      );
+      dispatch(openSnackbar({ message: '이름과 금액을 입력해주세요', severity: 'warning' }));
       return;
     }
 
@@ -307,7 +299,6 @@ const SelfAssetInput = () => {
     const currentData = getCurrentData();
 
     if (sheetMode === 'add') {
-      // 새 항목 추가
       const newItem: AssetItem = {
         id: `temp_${Date.now()}`,
         name: inputName.trim(),
@@ -325,7 +316,6 @@ const SelfAssetInput = () => {
       };
       setCurrentData([...currentData, newItem]);
     } else if (sheetMode === 'edit' && editingItem) {
-      // 기존 항목 수정
       const updatedData = currentData.map((item) =>
         item.id === editingItem.id
           ? {
@@ -353,44 +343,87 @@ const SelfAssetInput = () => {
 
   // 항목 삭제
   const handleDeleteItem = async (itemId: string) => {
-    // 임시 ID(temp_로 시작)는 서버에 저장되지 않은 항목이므로 로컬에서만 삭제
+    const isLoanTab = TAB_CONFIG[activeTab].key === 'loans';
+
+    // 임시 ID는 로컬에서만 삭제
     if (itemId.startsWith('temp_')) {
-      const currentData = getCurrentData();
-      const updatedData = currentData.filter((item) => item.id !== itemId);
+      const updatedData = getCurrentData().filter((item) => item.id !== itemId);
       setCurrentData(updatedData);
       return;
     }
 
-    // 서버에 저장된 항목은 API 호출하여 삭제
     try {
-      if (confirm("삭제 하시겠습니까?")) {
+      if (confirm('삭제 하시겠습니까?')) {
         const assetType = TAB_CONFIG[activeTab].key;
         await assetApi.deleteAssetItem(assetType, itemId);
 
-        // 성공하면 로컬 상태 업데이트
-        const currentData = getCurrentData();
-        const updatedData = currentData.filter((item) => item.id !== itemId);
-        setCurrentData(updatedData);
+        // 대출 삭제 시 서버에서 연결된 월지출도 삭제되므로 전체 리로드
+        if (isLoanTab) {
+          await loadAssetsData();
+        } else {
+          const updatedData = getCurrentData().filter((item) => item.id !== itemId);
+          setCurrentData(updatedData);
+        }
 
-        dispatch(
-          openSnackbar({
-            message: '항목이 삭제되었습니다',
-            severity: 'success',
-          })
-        );
+        dispatch(openSnackbar({ message: '항목이 삭제되었습니다', severity: 'success' }));
       }
     } catch (error) {
       console.error('항목 삭제 실패:', error);
-      dispatch(
-        openSnackbar({
-          message: '항목 삭제 중 오류가 발생했습니다',
-          severity: 'error',
-        })
-      );
+      dispatch(openSnackbar({ message: '항목 삭제 중 오류가 발생했습니다', severity: 'error' }));
     }
   };
 
-  // 금액 입력 핸들러 (숫자만 허용, 콤마 포맷)
+  // 대출 항목별 월지출 자동계산 버튼 핸들러
+  const handleLoanAutoCalculate = async (loan: AssetItem) => {
+    console.log(loan);
+    if (loan.id.startsWith('temp_')) {
+      dispatch(openSnackbar({ message: '먼저 자산정보를 저장해주세요', severity: 'warning' }));
+      return;
+    }
+
+    const linked = getLoanLinkedExpense(loan.id);
+    if (linked) {
+      dispatch(openSnackbar({ message: '이미 월지출이 등록되어 있습니다', severity: 'info' }));
+      return;
+    }
+
+    try {
+      await assetApi.registerLoanExpense(loan.id);
+      await loadAssetsData();
+      dispatch(openSnackbar({ message: `'${loan.name} 상환' 월지출이 등록되었습니다`, severity: 'success' }));
+    } catch (error) {
+      console.error('월지출 자동 등록 실패:', error);
+      dispatch(openSnackbar({ message: '월지출 자동 등록 중 오류가 발생했습니다', severity: 'error' }));
+    }
+  };
+
+  // 월지출 Confirm - 확인
+  const handleConfirmExpenseRegister = async () => {
+    setExpenseRegisterLoading(true);
+    try {
+      const loansToRegister = getLoansWithoutLinkedExpense(loans, monthlyExpense);
+      if (loansToRegister.length > 0) {
+        await Promise.all(loansToRegister.map((loan) => assetApi.registerLoanExpense(loan.id)));
+        await loadAssetsData();
+        dispatch(openSnackbar({ message: '월지출이 자동 등록되었습니다', severity: 'success' }));
+      }
+    } catch (error) {
+      console.error('월지출 자동 등록 실패:', error);
+      dispatch(openSnackbar({ message: '월지출 자동 등록 중 오류가 발생했습니다', severity: 'error' }));
+    } finally {
+      setExpenseRegisterLoading(false);
+      setShowExpenseConfirm(false);
+      navigate('/dashboard');
+    }
+  };
+
+  // 월지출 Confirm - 취소
+  const handleCancelExpenseRegister = () => {
+    setShowExpenseConfirm(false);
+    navigate('/dashboard');
+  };
+
+  // 금액 입력 핸들러
   const handleAmountChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
     if (numericValue) {
@@ -401,11 +434,8 @@ const SelfAssetInput = () => {
   };
 
   // 폼 제출
-  // - assetId가 있으면: PUT /api/v1/assets/{id} (자산정보 수정)
-  // - assetId가 없으면: POST /api/v1/assets/{userId}?ownerType=SELF (자산정보 직접 입력)
   const handleSubmit = async () => {
     setLoading(true);
-
     try {
       const requestData: AssetUpdateRequest = {
         assets,
@@ -417,48 +447,39 @@ const SelfAssetInput = () => {
       let response;
 
       if (assetId) {
-        // 기존 자산정보가 있으면 수정 API 호출
-        if (confirm("수정 하시겠습니까?")) {
+        if (confirm('수정 하시겠습니까?')) {
           response = await assetApi.updateAssets(assetId, requestData);
         }
       } else {
-        // 기존 자산정보가 없으면 직접 입력 API 호출
         if (!user?.userId) {
-          dispatch(
-            openSnackbar({
-              message: '사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.',
-              severity: 'error',
-            })
-          );
+          dispatch(openSnackbar({ message: '사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.', severity: 'error' }));
           setLoading(false);
           return;
         }
-        if (confirm("등록 하시겠습니까?")) {
+        if (confirm('등록 하시겠습니까?')) {
           response = await assetApi.createAssetsByUserId(user.userId, 'SELF', requestData);
         }
       }
 
       if (response) {
-        dispatch(
-          openSnackbar({
-            message: '본인 자산정보가 저장되었습니다',
-            severity: 'success',
-          })
-        );
+        dispatch(openSnackbar({ message: '본인 자산정보가 저장되었습니다', severity: 'success' }));
 
-        // // 배우자 자산정보 입력 화면으로 이동
-        // navigate('/assets/spouse');
+        // 저장 후 최신 데이터 리로드 (서버 ID 확보)
+        const reloaded = await loadAssetsData();
 
-        // 대시보드로 이동
+        // 대출 항목이 있고 토글이 ON이면 월지출 등록 Confirm 표시
+        if (reloaded && reloaded.loans.length > 0 && autoRegisterExpense) {
+          const unlinked = getLoansWithoutLinkedExpense(reloaded.loans, reloaded.monthlyExpenses);
+          if (unlinked.length > 0) {
+            setShowExpenseConfirm(true);
+            return; // 다이얼로그에서 navigate 처리
+          }
+        }
+
         navigate('/dashboard');
       }
     } catch (error) {
-      dispatch(
-        openSnackbar({
-          message: '자산정보 저장 중 오류가 발생했습니다',
-          severity: 'error',
-        })
-      );
+      dispatch(openSnackbar({ message: '자산정보 저장 중 오류가 발생했습니다', severity: 'error' }));
     } finally {
       setLoading(false);
     }
@@ -475,6 +496,8 @@ const SelfAssetInput = () => {
   const currentData = getCurrentData();
   const currentTotal = calculateTotal(currentData);
   const currentConfig = TAB_CONFIG[activeTab];
+  const isLoanTab = currentConfig.key === 'loans';
+  const isExpenseTab = currentConfig.key === 'monthlyExpense';
 
   return (
     <Box sx={{ pb: 18 }}>
@@ -500,6 +523,38 @@ const SelfAssetInput = () => {
         ))}
       </Tabs>
 
+      {/* 대출 탭: 월지출 자동 등록 토글 */}
+      {isLoanTab && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1,
+            py: 1,
+            mb: 1.5,
+            bgcolor: 'grey.50',
+            borderRadius: 1,
+            border: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              월지출 자동 등록
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              저장 시 월 상환액을 월지출로 자동 등록합니다
+            </Typography>
+          </Box>
+          <Switch
+            checked={autoRegisterExpense}
+            onChange={(e) => setAutoRegisterExpense(e.target.checked)}
+            color="primary"
+          />
+        </Box>
+      )}
+
       {/* 항목 목록 */}
       <Box sx={{ minHeight: '40vh' }}>
         {currentData.length === 0 ? (
@@ -515,11 +570,7 @@ const SelfAssetInput = () => {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
               등록된 {currentConfig.label}이(가) 없습니다
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={handleOpenAddSheet}
-            >
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleOpenAddSheet}>
               {currentConfig.addLabel}
             </Button>
           </Box>
@@ -530,13 +581,26 @@ const SelfAssetInput = () => {
                 <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <Box sx={{ flex: 1 }}>
+                      {/* 월지출 탭: 대출 연결 표시 */}
+                      {isExpenseTab && item.loanItemId && (
+                        <Chip
+                          icon={<LinkIcon />}
+                          label="대출연결"
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ mb: 0.5, height: 20, fontSize: '0.65rem' }}
+                        />
+                      )}
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
                         {item.name}
                       </Typography>
                       <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
                         {formatAmount(item.amount)}원
                       </Typography>
-                      {TAB_CONFIG[activeTab].key === 'loans' && (
+
+                      {/* 대출 탭: 상세 정보 */}
+                      {isLoanTab && (
                         <Box sx={{ mt: 0.5 }}>
                           {item.interestRate != null && (
                             <Typography variant="caption" color="text.secondary">
@@ -578,24 +642,55 @@ const SelfAssetInput = () => {
                               ⚠️ 지출계산 제외
                             </Typography>
                           )}
+                          {/* 월지출 연결 상태 */}
+                          {!item.id.startsWith('temp_') && (
+                            <Box sx={{ mt: 0.5 }}>
+                              {getLoanLinkedExpense(item.id) ? (
+                                <Chip
+                                  icon={<LinkIcon />}
+                                  label="월지출 연결됨"
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                  sx={{ height: 20, fontSize: '0.65rem' }}
+                                />
+                              ) : (
+                                <Chip
+                                  label="월지출 미연결"
+                                  size="small"
+                                  color="default"
+                                  variant="outlined"
+                                  sx={{ height: 20, fontSize: '0.65rem' }}
+                                />
+                              )}
+                            </Box>
+                          )}
                         </Box>
                       )}
                     </Box>
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenEditSheet(item)}
-                        sx={{ mr: 0.5 }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteItem(item.id)}
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+
+                    {/* 버튼 영역 */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                      <Box>
+                        <IconButton size="small" onClick={() => handleOpenEditSheet(item)} sx={{ mr: 0.5 }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDeleteItem(item.id)} color="error">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      {/* 대출 탭: 항목별 월지출 자동계산 버튼 */}
+                      {isLoanTab && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<CalculateIcon fontSize="small" />}
+                          onClick={() => handleLoanAutoCalculate(item)}
+                          sx={{ fontSize: '0.65rem', py: 0.3, px: 0.8, whiteSpace: 'nowrap' }}
+                        >
+                          월지출 자동계산
+                        </Button>
+                      )}
                     </Box>
                   </Box>
                 </CardContent>
@@ -610,17 +705,12 @@ const SelfAssetInput = () => {
         color="primary"
         aria-label="add"
         onClick={handleOpenAddSheet}
-        sx={{
-          position: 'fixed',
-          bottom: 160,
-          right: 16,
-          zIndex: 101,
-        }}
+        sx={{ position: 'fixed', bottom: 160, right: 16, zIndex: 101 }}
       >
         <AddIcon />
       </Fab>
 
-      {/* 하단 고정 영역: 총액 + 다음 버튼 */}
+      {/* 하단 고정 영역: 총액 + 저장 버튼 */}
       <Box
         sx={{
           position: 'fixed',
@@ -632,15 +722,7 @@ const SelfAssetInput = () => {
           zIndex: 100,
         }}
       >
-        {/* 총액 표시 */}
-        <Box
-          sx={{
-            p: 1.5,
-            bgcolor: 'grey.100',
-            borderBottom: 1,
-            borderColor: 'divider',
-          }}
-        >
+        <Box sx={{ p: 1.5, bgcolor: 'grey.100', borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
               총 {currentConfig.label}
@@ -650,8 +732,6 @@ const SelfAssetInput = () => {
             </Typography>
           </Box>
         </Box>
-
-        {/* 다음 버튼 */}
         <Box sx={{ p: 2, pb: 8 }}>
           <Button
             variant="contained"
@@ -665,6 +745,33 @@ const SelfAssetInput = () => {
           </Button>
         </Box>
       </Box>
+
+      {/* 월지출 자동 등록 Confirm 다이얼로그 */}
+      <Dialog open={showExpenseConfirm} onClose={handleCancelExpenseRegister}>
+        <DialogTitle>월 지출 자동 등록</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            월 지출도 등록하시겠습니까?
+            <br />
+            <Typography variant="caption" color="text.secondary">
+              대출 정보를 기반으로 월 상환액을 계산하여 월지출로 자동 등록합니다.
+            </Typography>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelExpenseRegister} color="inherit" disabled={expenseRegisterLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleConfirmExpenseRegister}
+            variant="contained"
+            disabled={expenseRegisterLoading}
+            startIcon={expenseRegisterLoading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          >
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 바텀시트 (항목 추가/수정) */}
       <Drawer
@@ -692,9 +799,7 @@ const SelfAssetInput = () => {
 
           {/* 입력 폼 */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-              이름
-            </Typography>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>이름</Typography>
             <TextField
               fullWidth
               placeholder={`예: ${currentConfig.key === 'assets' ? '예금, 주식, 부동산' : currentConfig.key === 'loans' ? '주택담보대출, 신용대출' : currentConfig.key === 'monthlyIncome' ? '급여, 부업' : '생활비, 보험료'}`}
@@ -704,9 +809,7 @@ const SelfAssetInput = () => {
               helperText={errors.name}
               sx={{ mb: 2 }}
             />
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-              금액 (원)
-            </Typography>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>금액 (원)</Typography>
             <TextField
               fullWidth
               placeholder="0"
@@ -721,18 +824,14 @@ const SelfAssetInput = () => {
             {/* 대출 탭 전용 필드 */}
             {currentConfig.key === 'loans' && (
               <>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  금리 (%)
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>금리 (%)</Typography>
                 <TextField
                   fullWidth
                   placeholder="예: 3.5"
                   value={inputInterestRate}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^\d*\.?\d*$/.test(val)) {
-                      setInputInterestRate(val);
-                    }
+                    if (/^\d*\.?\d*$/.test(val)) setInputInterestRate(val);
                   }}
                   inputProps={{ inputMode: 'decimal' }}
                   error={!!errors.interestRate}
@@ -740,66 +839,44 @@ const SelfAssetInput = () => {
                   sx={{ mb: 2 }}
                 />
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  상환 유형
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>상환 유형</Typography>
                 <FormControl fullWidth sx={{ mb: 2 }} error={!!errors.repaymentType}>
                   <Select
                     value={inputRepaymentType}
                     onChange={(e) => setInputRepaymentType(e.target.value)}
                     displayEmpty
                   >
-                    <MenuItem value="" disabled>
-                      상환 유형 선택
-                    </MenuItem>
+                    <MenuItem value="" disabled>상환 유형 선택</MenuItem>
                     {REPAYMENT_TYPE_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </MenuItem>
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                     ))}
                   </Select>
-                  {errors.repaymentType && (
-                    <FormHelperText>{errors.repaymentType}</FormHelperText>
-                  )}
+                  {errors.repaymentType && <FormHelperText>{errors.repaymentType}</FormHelperText>}
                 </FormControl>
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  대출유형
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>대출유형</Typography>
                 <FormControl fullWidth sx={{ mb: 2 }} error={!!errors.loanType}>
                   <Select
                     value={inputLoanType}
                     onChange={(e) => setInputLoanType(e.target.value)}
                     displayEmpty
                   >
-                    <MenuItem value="" disabled>
-                      대출유형 선택
-                    </MenuItem>
+                    <MenuItem value="" disabled>대출유형 선택</MenuItem>
                     {LOAN_TYPE_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </MenuItem>
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                     ))}
                   </Select>
-                  {errors.loanType && (
-                    <FormHelperText>{errors.loanType}</FormHelperText>
-                  )}
+                  {errors.loanType && <FormHelperText>{errors.loanType}</FormHelperText>}
                 </FormControl>
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  대출실행 금액 (원)
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>대출실행 금액 (원)</Typography>
                 <TextField
                   fullWidth
                   placeholder="0"
                   value={inputExecutedAmount}
                   onChange={(e) => {
                     const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                    if (numericValue) {
-                      setInputExecutedAmount(formatAmount(parseInt(numericValue, 10)));
-                    } else {
-                      setInputExecutedAmount('');
-                    }
+                    setInputExecutedAmount(numericValue ? formatAmount(parseInt(numericValue, 10)) : '');
                   }}
                   inputProps={{ inputMode: 'numeric' }}
                   error={!!errors.executedAmount}
@@ -807,18 +884,13 @@ const SelfAssetInput = () => {
                   sx={{ mb: 2 }}
                 />
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  상환기간 (개월)
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>상환기간 (개월)</Typography>
                 <TextField
                   fullWidth
                   placeholder="예: 360"
                   value={inputRepaymentPeriod}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^\d*$/.test(val)) {
-                      setInputRepaymentPeriod(val);
-                    }
+                    if (/^\d*$/.test(e.target.value)) setInputRepaymentPeriod(e.target.value);
                   }}
                   inputProps={{ inputMode: 'numeric' }}
                   error={!!errors.repaymentPeriod}
@@ -826,26 +898,19 @@ const SelfAssetInput = () => {
                   sx={{ mb: 2 }}
                 />
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  거치기간 (개월)
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>거치기간 (개월)</Typography>
                 <TextField
                   fullWidth
                   placeholder="예: 12"
                   value={inputGracePeriod}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^\d*$/.test(val)) {
-                      setInputGracePeriod(val);
-                    }
+                    if (/^\d*$/.test(e.target.value)) setInputGracePeriod(e.target.value);
                   }}
                   inputProps={{ inputMode: 'numeric' }}
                   sx={{ mb: 2 }}
                 />
 
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                  만기일
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>만기일</Typography>
                 <TextField
                   fullWidth
                   type="date"
@@ -867,9 +932,7 @@ const SelfAssetInput = () => {
                     }
                     label={
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          지출계산 제외
-                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>지출계산 제외</Typography>
                         <Typography variant="caption" color="text.secondary">
                           DSR 계산 시 이 대출을 제외합니다
                         </Typography>
@@ -882,13 +945,7 @@ const SelfAssetInput = () => {
           </Box>
 
           {/* 저장 버튼 */}
-          <Button
-            variant="contained"
-            size="large"
-            fullWidth
-            onClick={handleSaveItem}
-            sx={{ py: 1.5 }}
-          >
+          <Button variant="contained" size="large" fullWidth onClick={handleSaveItem} sx={{ py: 1.5 }}>
             {sheetMode === 'add' ? '추가' : '수정'}
           </Button>
         </Box>

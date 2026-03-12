@@ -41,6 +41,8 @@ export const API_ENDPOINTS = {
       `${API_CONFIG.API_GROUP}/assets/${userId}?ownerType=${ownerType}`,
     DELETE_ITEM: (assetType: string, id: string) =>
       `${API_CONFIG.API_GROUP}/assets/${assetType}/${id}`,
+    LOAN_EXPENSE: (loanId: string) =>
+      `${API_CONFIG.API_GROUP}/assets/loans/${loanId}/expense`,
   },
 
   // Housing Service

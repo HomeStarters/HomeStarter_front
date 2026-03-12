@@ -19,6 +19,7 @@ export interface AssetItem {
   executedAmount?: number;
   repaymentPeriod?: number;
   gracePeriod?: number;
+  loanItemId?: string; // 월지출 항목이 연결된 대출자산 ID
 }
 
 // 자산 정보 타입 (개별 사용자)
@@ -176,6 +177,14 @@ export const assetApi = {
   ): Promise<void> => {
     await assetApiClient.delete(
       API_ENDPOINTS.ASSET.DELETE_ITEM(assetType, id)
+    );
+  },
+
+  // 대출 기반 월지출 자동 등록 (POST /api/v1/assets/loans/{loanId}/expense)
+  registerLoanExpense: async (loanId: string): Promise<void> => {
+    await assetApiClient.post(
+      API_ENDPOINTS.ASSET.LOAN_EXPENSE(loanId),
+      ''
     );
   },
 
